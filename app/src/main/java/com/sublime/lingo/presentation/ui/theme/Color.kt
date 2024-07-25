@@ -1,4 +1,4 @@
-package com.sublime.lingo.ui.theme
+package com.sublime.lingo.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
