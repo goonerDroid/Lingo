@@ -1,5 +1,6 @@
 package com.sublime.lingo.presentation.ui.viewmodel
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sublime.lingo.data.repository.TranslationRepository
@@ -13,6 +14,11 @@ class TranslationViewModel
     constructor(
         private val repository: TranslationRepository,
     ) : ViewModel() {
+//        var inputText by mutableStateOf("")
+//        private var outputText by mutableStateOf("")
+//        var sourceLanguage by mutableStateOf("English")
+//        var targetLanguage by mutableStateOf("Spanish")
+
         fun translate(
             text: String,
             sourceLanguage: String,
@@ -22,7 +28,7 @@ class TranslationViewModel
                 val result = repository.translate(text, sourceLanguage, targetLanguage)
                 result.fold(
                     onSuccess = { translatedText ->
-                        // Update UI
+//                        outputText = translatedText
                     },
                     onFailure = { error ->
                         // Handle error

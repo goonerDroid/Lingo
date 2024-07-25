@@ -1,7 +1,7 @@
 plugins {
-    id("kotlin-kapt")
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    id("kotlin-kapt")
     alias(libs.plugins.hilt)
 }
 
@@ -59,11 +59,10 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.moshi)
     implementation(libs.moshi.kotlin)
-    //noinspection KaptUsageInsteadOfKsp
-    kapt(libs.moshi.codegen)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
