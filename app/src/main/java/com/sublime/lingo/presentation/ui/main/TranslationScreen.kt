@@ -178,22 +178,18 @@ fun LanguageSelector(
     Row(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .background(Color.LightGray)
-                .padding(8.dp)
-                .clip(CircleShape),
+                .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         LanguageButton(languageItem = sourceLanguage, onClick = onSourceLanguageChange)
-        Spacer(modifier = Modifier.width(8.dp))
         IconButton(
             onClick = onSwapLanguages,
             modifier =
                 Modifier
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.Black)
-                    .size(40.dp),
+                    .background(Color.Black),
         ) {
             Icon(
                 Icons.Default.Refresh,
@@ -201,7 +197,6 @@ fun LanguageSelector(
                 tint = Color.White,
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
         LanguageButton(languageItem = targetLanguage, onClick = onTargetLanguageChange)
     }
 }
@@ -213,16 +208,16 @@ fun LanguageButton(
 ) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(Color.White),
+        colors = ButtonDefaults.buttonColors(Color.LightGray),
         modifier =
             Modifier
+                .padding(horizontal = 8.dp)
                 .height(50.dp)
                 .clip(CircleShape),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Start,
-            modifier = Modifier.fillMaxWidth(),
         ) {
             Image(
                 painter = painterResource(id = getFlagResource(languageItem)),
@@ -239,6 +234,25 @@ fun LanguageButton(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+fun TopBar() {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+    ) {
+        Text(
+            text = "LinGO",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
@@ -267,25 +281,6 @@ fun LanguageSelectionScreen(navController: NavHostController) {
                 )
             }
         }
-    }
-}
-
-@Composable
-fun TopBar() {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-    ) {
-        Text(
-            text = "LinGO",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
