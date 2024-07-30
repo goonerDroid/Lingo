@@ -30,10 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,8 +66,9 @@ fun TranslationApp() {
         composable("translation") {
             TranslationScreen(navController)
         }
-        composable("languageSelection") {
-            LanguageSelectionScreen(navController)
+        composable("languageSelection/{languageType}") { backStackEntry ->
+            val languageType = backStackEntry.arguments?.getString("languageType")
+            LanguageSelectionScreen(navController, languageType)
         }
     }
 }
@@ -76,18 +78,42 @@ fun TranslationScreen(
     navController: NavHostController,
     viewModel: TranslationViewModel = hiltViewModel(),
 ) {
-    var sourceLanguage by remember { mutableStateOf("en") }
-    var targetLanguage by remember { mutableStateOf("id") }
-    var sourceText by remember { mutableStateOf("") }
+    var sourceLanguage by rememberSaveable { mutableStateOf("en") }
+    var targetLanguage by rememberSaveable { mutableStateOf("id") }
+    var sourceText by rememberSaveable { mutableStateOf("") }
 
     val selectedLanguage =
         navController.currentBackStackEntry
             ?.savedStateHandle
             ?.getLiveData<String>("selectedLanguage")
             ?.observeAsState()
+    val languageType =
+        navController.currentBackStackEntry
+            ?.savedStateHandle
+            ?.getLiveData<String>("languageType")
+            ?.observeAsState()
 
-    selectedLanguage?.value?.let { language ->
-        sourceLanguage = language // Update this logic as needed
+    // Only update the state if the selected language is different
+    LaunchedEffect(selectedLanguage?.value, languageType?.value) {
+        selectedLanguage?.value?.let { language ->
+            when (languageType?.value) {
+                "source" -> {
+                    if (sourceLanguage != language) {
+                        sourceLanguage = language
+                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
+                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
+                    }
+                }
+
+                "target" -> {
+                    if (targetLanguage != language) {
+                        targetLanguage = language
+                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
+                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
+                    }
+                }
+            }
+        }
     }
 
     Column(
@@ -108,13 +134,13 @@ fun TranslationScreen(
                 targetLanguage = temp
             },
             onSourceLanguageChange = {
-                navController.navigate("languageSelection") {
+                navController.navigate("languageSelection/source") {
                     launchSingleTop = true
                     restoreState = true
                 }
             },
             onTargetLanguageChange = {
-                navController.navigate("languageSelection") {
+                navController.navigate("languageSelection/target") {
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -213,6 +239,7 @@ fun LanguageButton(
             Modifier
                 .padding(horizontal = 8.dp)
                 .height(50.dp)
+                .width(135.dp)
                 .clip(CircleShape),
     ) {
         Row(
@@ -257,7 +284,10 @@ fun TopBar() {
 }
 
 @Composable
-fun LanguageSelectionScreen(navController: NavHostController) {
+fun LanguageSelectionScreen(
+    navController: NavHostController,
+    languageType: String?,
+) {
     Column(
         modifier =
             Modifier
@@ -276,6 +306,9 @@ fun LanguageSelectionScreen(navController: NavHostController) {
                         navController.previousBackStackEntry
                             ?.savedStateHandle
                             ?.set("selectedLanguage", language)
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("languageType", languageType)
                         navController.popBackStack()
                     },
                 )
