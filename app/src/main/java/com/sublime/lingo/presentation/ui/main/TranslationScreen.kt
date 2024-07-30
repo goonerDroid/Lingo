@@ -54,7 +54,9 @@ import androidx.navigation.compose.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
 import com.google.accompanist.navigation.material.rememberBottomSheetNavigator
-import com.sublime.lingo.R
+import com.sublime.lingo.presentation.ui.getFlagResource
+import com.sublime.lingo.presentation.ui.getLanguageName
+import com.sublime.lingo.presentation.ui.getSupportedLanguages
 import com.sublime.lingo.presentation.ui.viewmodel.TranslationViewModel
 
 @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
@@ -79,7 +81,7 @@ fun TranslationScreen(
     viewModel: TranslationViewModel = hiltViewModel(),
 ) {
     var sourceLanguage by rememberSaveable { mutableStateOf("en") }
-    var targetLanguage by rememberSaveable { mutableStateOf("id") }
+    var targetLanguage by rememberSaveable { mutableStateOf("hi") }
     var sourceText by rememberSaveable { mutableStateOf("") }
 
     val selectedLanguage =
@@ -292,8 +294,7 @@ fun LanguageSelectionScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .padding(16.dp),
+                .background(Color.White),
     ) {
         TopBar()
         LazyColumn(
@@ -301,11 +302,11 @@ fun LanguageSelectionScreen(
         ) {
             items(getSupportedLanguages()) { language ->
                 LanguageListItem(
-                    languageCode = language,
+                    languageCode = language.second,
                     onClick = {
                         navController.previousBackStackEntry
                             ?.savedStateHandle
-                            ?.set("selectedLanguage", language)
+                            ?.set("selectedLanguage", language.second)
                         navController.previousBackStackEntry
                             ?.savedStateHandle
                             ?.set("languageType", languageType)
@@ -343,29 +344,3 @@ fun LanguageListItem(
         )
     }
 }
-
-// Helper functions
-fun getSupportedLanguages(): List<String> {
-    return listOf("en", "id", "fr", "es", "de") // Add more language codes as needed
-}
-
-fun getFlagResource(languageCode: String): Int {
-    // Return the appropriate flag resource based on the language code
-    return when (languageCode) {
-        "en" -> R.drawable.ic_launcher_foreground
-        "id" -> R.drawable.ic_launcher_foreground
-        "fr" -> R.drawable.ic_launcher_foreground
-        "es" -> R.drawable.ic_launcher_foreground
-        else -> R.drawable.ic_launcher_foreground
-    }
-}
-
-fun getLanguageName(languageCode: String): String =
-    when (languageCode) {
-        "en" -> "English"
-        "id" -> "Indonesian"
-        "fr" -> "French"
-        "es" -> "Spanish"
-        "de" -> "German"
-        else -> "Unknown"
-    }
