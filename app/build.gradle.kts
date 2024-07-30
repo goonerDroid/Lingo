@@ -67,6 +67,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("com.google.accompanist:accompanist-navigation-animation:0.29.1-alpha")
+    implementation("com.google.accompanist:accompanist-navigation-material:0.29.1-alpha")
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.3")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
