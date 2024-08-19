@@ -23,7 +23,7 @@ object NetworkModule {
     fun provideRetrofit(moshi: Moshi): Retrofit =
         Retrofit
             .Builder()
-            .baseUrl("http://localhost:8000/")
+            .baseUrl("http://10.0.2.2:8000") // TODO Using local host for development
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
 

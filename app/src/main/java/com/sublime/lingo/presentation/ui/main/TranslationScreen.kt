@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -150,24 +151,28 @@ fun TranslationScreen(
             },
         )
         Spacer(modifier = Modifier.height(16.dp))
-        TranslationArea()
+        TranslationArea(viewModel, sourceLanguage, targetLanguage)
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun TranslationArea() {
+fun TranslationArea(
+    viewModel: TranslationViewModel = hiltViewModel(),
+    sourceLanguage: String,
+    targetLanguage: String,
+) {
     var inputText by remember { mutableStateOf("") }
-    var outputText by remember { mutableStateOf("") }
+    val outputText by viewModel.translationResult.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Compact input area
         BasicTextField(
             value = inputText,
-            onValueChange = {
-                inputText = it
-                // Here you would typically call your translation function
-                outputText = translateText(it)
+            onValueChange = { newText ->
+                inputText = newText
+                if (newText.isNotEmpty()) {
+                    viewModel.translate(newText, sourceLanguage, targetLanguage)
+                }
             },
             modifier =
                 Modifier
@@ -204,9 +209,9 @@ fun TranslationArea() {
                     .fillMaxWidth()
                     .padding(16.dp),
         ) {
-            if (outputText.isNotEmpty()) {
+            if (!outputText.isNullOrEmpty()) {
                 Text(
-                    text = outputText,
+                    text = outputText!!,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                 )
@@ -219,12 +224,6 @@ fun TranslationArea() {
             }
         }
     }
-}
-
-// Placeholder function for translation logic
-private fun translateText(input: String): String {
-    // Implement your translation logic here
-    return "Translated: $input"
 }
 
 @Composable

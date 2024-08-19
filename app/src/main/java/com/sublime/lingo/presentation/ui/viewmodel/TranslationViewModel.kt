@@ -31,7 +31,6 @@ class TranslationViewModel
                         _translationResult.value = translatedText
                     },
                     onFailure = { error ->
-                        // Handle error (you might want to add error handling in the UI as well)
                         _translationResult.value = "Error: ${error.message}"
                     },
                 )

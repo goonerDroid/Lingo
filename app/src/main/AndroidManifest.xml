@@ -9,9 +9,11 @@
     android:icon="@mipmap/ic_launcher"
     android:label="@string/app_name"
     android:name=".LingoApplication"
+    android:networkSecurityConfig="@xml/network_security_config"
     android:roundIcon="@mipmap/ic_launcher_round"
     android:supportsRtl="true"
     android:theme="@style/Theme.Lingo"
+    android:usesCleartextTraffic="true"
     tools:targetApi="31">
     <activity
       android:exported="true"
@@ -24,5 +26,8 @@
       </intent-filter>
     </activity>
   </application>
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+  <uses-permission android:name="android.permission.INTERNET" />
 
 </manifest>
