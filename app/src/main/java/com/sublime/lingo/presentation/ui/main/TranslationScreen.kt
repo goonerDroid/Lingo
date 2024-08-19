@@ -18,22 +18,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -150,50 +150,81 @@ fun TranslationScreen(
             },
         )
         Spacer(modifier = Modifier.height(16.dp))
-        TranslationArea(
-            sourceText = sourceText,
-            onSourceTextChange = {
-                sourceText = it
-                viewModel.translate(it, sourceLanguage, targetLanguage)
-            },
-            translatedText = "", // TODO Check this later
-        )
+        TranslationArea()
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TranslationArea(
-    sourceText: String,
-    onSourceTextChange: (String) -> Unit,
-    translatedText: String,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextField(
-            value = sourceText,
-            onValueChange = onSourceTextChange,
+fun TranslationArea() {
+    var inputText by remember { mutableStateOf("") }
+    var outputText by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Compact input area
+        BasicTextField(
+            value = inputText,
+            onValueChange = {
+                inputText = it
+                // Here you would typically call your translation function
+                outputText = translateText(it)
+            },
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-            placeholder = { Text("Enter text") },
-            colors =
-                TextFieldDefaults.textFieldColors(
-                    Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                ),
+                    .padding(16.dp),
+            textStyle = TextStyle(fontSize = 18.sp),
+            decorationBox = { innerTextField ->
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                ) {
+                    if (inputText.isEmpty()) {
+                        Text(
+                            "Type the text to translate",
+                            color = Color.Gray,
+                            fontSize = 18.sp,
+                        )
+                    }
+                    innerTextField()
+                }
+            },
         )
-        Divider()
-        Text(
-            text = translatedText,
+
+        // Divider between input and output
+        Divider(color = Color.LightGray, thickness = 1.dp)
+
+        // Prominent output area
+        Box(
             modifier =
                 Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .height(120.dp)
-                    .padding(top = 8.dp),
-        )
+                    .padding(16.dp),
+        ) {
+            if (outputText.isNotEmpty()) {
+                Text(
+                    text = outputText,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            } else {
+                Text(
+                    "Translation will appear here",
+                    color = Color.Gray,
+                    fontSize = 18.sp,
+                )
+            }
+        }
     }
+}
+
+// Placeholder function for translation logic
+private fun translateText(input: String): String {
+    // Implement your translation logic here
+    return "Translated: $input"
 }
 
 @Composable
@@ -250,7 +281,7 @@ fun LanguageButton(
             horizontalArrangement = Arrangement.Start,
         ) {
             Image(
-                painter = painterResource(id = getFlagResource(LocalContext.current,languageItem)),
+                painter = painterResource(id = getFlagResource(LocalContext.current, languageItem)),
                 contentDescription = "Flag",
                 modifier = Modifier.size(24.dp),
                 contentScale = ContentScale.Fit,
