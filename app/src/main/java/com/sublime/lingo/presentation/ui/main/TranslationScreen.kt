@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -249,7 +250,7 @@ fun LanguageButton(
             horizontalArrangement = Arrangement.Start,
         ) {
             Image(
-                painter = painterResource(id = getFlagResource(languageItem)),
+                painter = painterResource(id = getFlagResource(LocalContext.current,languageItem)),
                 contentDescription = "Flag",
                 modifier = Modifier.size(24.dp),
                 contentScale = ContentScale.Fit,
@@ -332,7 +333,7 @@ fun LanguageListItem(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(id = getFlagResource(languageCode)),
+            painter = painterResource(id = getFlagResource(LocalContext.current, languageCode)),
             contentDescription = "Flag",
             modifier = Modifier.size(32.dp),
             contentScale = ContentScale.Fit,

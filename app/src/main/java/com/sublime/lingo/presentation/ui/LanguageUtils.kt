@@ -1,5 +1,6 @@
 package com.sublime.lingo.presentation.ui
 
+import android.content.Context
 import com.sublime.lingo.R
 
 // List of supported languages with their IDs
@@ -16,7 +17,7 @@ fun getSupportedLanguages(): List<Pair<String, String>> =
         "Bengali" to "bn",
         "Breton" to "br",
         "Bosnian" to "bs",
-        "Catalan; Valencian" to "ca",
+        "Catalan, Valencian" to "ca",
         "Cebuano" to "ceb",
         "Czech" to "cs",
         "Welsh" to "cy",
@@ -108,9 +109,12 @@ fun getSupportedLanguages(): List<Pair<String, String>> =
     )
 
 // Return the appropriate flag resource based on the language code
-fun getFlagResource(languageCode: String): Int {
-    // Placeholder for flag resources based on language code
-    return R.drawable.ic_launcher_foreground // Replace with actual flag resources
+fun getFlagResource(
+    context: Context,
+    languageCode: String,
+): Int {
+    val resourceId = context.resources.getIdentifier(languageCode, "drawable", context.packageName)
+    return if (resourceId != 0) resourceId else R.drawable.ic_launcher_foreground // Default placeholder
 }
 
 // Get the language name from the language code
