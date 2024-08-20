@@ -29,6 +29,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            buildConfigField("Boolean", "ENABLE_LOGGING", "false")
+        }
+        debug {
+            buildConfigField("Boolean", "ENABLE_LOGGING", "true")
         }
     }
     compileOptions {
@@ -40,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -71,6 +76,8 @@ dependencies {
     implementation("com.google.accompanist:accompanist-navigation-material:0.29.1-alpha")
     implementation("androidx.compose.runtime:runtime-livedata:1.6.8")
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.3")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,9 +33,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +57,7 @@ import com.google.accompanist.navigation.material.rememberBottomSheetNavigator
 import com.sublime.lingo.presentation.ui.getFlagResource
 import com.sublime.lingo.presentation.ui.getLanguageName
 import com.sublime.lingo.presentation.ui.getSupportedLanguages
+import com.sublime.lingo.presentation.ui.viewmodel.TranslationState
 import com.sublime.lingo.presentation.ui.viewmodel.TranslationViewModel
 
 @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
@@ -82,9 +81,8 @@ fun TranslationScreen(
     navController: NavHostController,
     viewModel: TranslationViewModel = hiltViewModel(),
 ) {
-    var sourceLanguage by rememberSaveable { mutableStateOf("en") }
-    var targetLanguage by rememberSaveable { mutableStateOf("hi") }
-    var sourceText by rememberSaveable { mutableStateOf("") }
+    val sourceLanguage by viewModel.sourceLanguage.collectAsState()
+    val targetLanguage by viewModel.targetLanguage.collectAsState()
 
     val selectedLanguage =
         navController.currentBackStackEntry
@@ -97,24 +95,19 @@ fun TranslationScreen(
             ?.getLiveData<String>("languageType")
             ?.observeAsState()
 
-    // Only update the state if the selected language is different
     LaunchedEffect(selectedLanguage?.value, languageType?.value) {
         selectedLanguage?.value?.let { language ->
             when (languageType?.value) {
                 "source" -> {
-                    if (sourceLanguage != language) {
-                        sourceLanguage = language
-                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
-                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
-                    }
+                    viewModel.setSourceLanguage(language)
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
                 }
 
                 "target" -> {
-                    if (targetLanguage != language) {
-                        targetLanguage = language
-                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
-                        navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
-                    }
+                    viewModel.setTargetLanguage(language)
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
+                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
                 }
             }
         }
@@ -133,9 +126,9 @@ fun TranslationScreen(
             sourceLanguage = sourceLanguage,
             targetLanguage = targetLanguage,
             onSwapLanguages = {
-                val temp = sourceLanguage
-                sourceLanguage = targetLanguage
-                targetLanguage = temp
+                val tempSource = sourceLanguage
+                viewModel.setSourceLanguage(targetLanguage)
+                viewModel.setTargetLanguage(tempSource)
             },
             onSourceLanguageChange = {
                 navController.navigate("languageSelection/source") {
@@ -151,28 +144,22 @@ fun TranslationScreen(
             },
         )
         Spacer(modifier = Modifier.height(16.dp))
-        TranslationArea(viewModel, sourceLanguage, targetLanguage)
+        TranslationArea(viewModel)
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun TranslationArea(
-    viewModel: TranslationViewModel = hiltViewModel(),
-    sourceLanguage: String,
-    targetLanguage: String,
-) {
-    var inputText by remember { mutableStateOf("") }
-    val outputText by viewModel.translationResult.collectAsState()
+fun TranslationArea(viewModel: TranslationViewModel = hiltViewModel()) {
+    val inputText by viewModel.inputText.collectAsState()
+    val translationState by viewModel.translationResult.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Input area
         BasicTextField(
             value = inputText,
             onValueChange = { newText ->
-                inputText = newText
-                if (newText.isNotEmpty()) {
-                    viewModel.translate(newText, sourceLanguage, targetLanguage)
-                }
+                viewModel.updateInputText(newText)
             },
             modifier =
                 Modifier
@@ -198,10 +185,20 @@ fun TranslationArea(
             },
         )
 
-        // Divider between input and output
+        // Translate button
+        Button(
+            onClick = { viewModel.translate() },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Text("Translate")
+        }
+
         Divider(color = Color.LightGray, thickness = 1.dp)
 
-        // Prominent output area
+        // Output area
         Box(
             modifier =
                 Modifier
@@ -209,18 +206,34 @@ fun TranslationArea(
                     .fillMaxWidth()
                     .padding(16.dp),
         ) {
-            if (!outputText.isNullOrEmpty()) {
-                Text(
-                    text = outputText!!,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            } else {
-                Text(
-                    "Translation will appear here",
-                    color = Color.Gray,
-                    fontSize = 18.sp,
-                )
+            when (translationState) {
+                is TranslationState.Idle -> {
+                    Text(
+                        "Translation will appear here",
+                        color = Color.Gray,
+                        fontSize = 18.sp,
+                    )
+                }
+
+                is TranslationState.Loading -> {
+                    CircularProgressIndicator()
+                }
+
+                is TranslationState.Success -> {
+                    Text(
+                        text = (translationState as TranslationState.Success).translatedText,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                is TranslationState.Error -> {
+                    Text(
+                        text = (translationState as TranslationState.Error).message,
+                        color = Color.Red,
+                        fontSize = 18.sp,
+                    )
+                }
             }
         }
     }
@@ -235,13 +248,14 @@ fun LanguageSelector(
     onTargetLanguageChange: () -> Unit,
 ) {
     Row(
-        modifier =
-            Modifier
-                .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        LanguageButton(languageItem = sourceLanguage, onClick = onSourceLanguageChange)
+        LanguageButton(
+            languageItem = sourceLanguage,
+            onClick = onSourceLanguageChange,
+        )
         IconButton(
             onClick = onSwapLanguages,
             modifier =
@@ -256,7 +270,10 @@ fun LanguageSelector(
                 tint = Color.White,
             )
         }
-        LanguageButton(languageItem = targetLanguage, onClick = onTargetLanguageChange)
+        LanguageButton(
+            languageItem = targetLanguage,
+            onClick = onTargetLanguageChange,
+        )
     }
 }
 
@@ -306,7 +323,7 @@ fun TopBar() {
                 .padding(vertical = 8.dp),
     ) {
         Text(
-            text = "LinGO",
+            text = "Lingo",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black,
