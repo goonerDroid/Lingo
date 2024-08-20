@@ -83,6 +83,8 @@ fun TranslationScreen(
 ) {
     val sourceLanguage by viewModel.sourceLanguage.collectAsState()
     val targetLanguage by viewModel.targetLanguage.collectAsState()
+    val inputText by viewModel.inputText.collectAsState()
+    val translationState by viewModel.translationResult.collectAsState()
 
     val selectedLanguage =
         navController.currentBackStackEntry
@@ -98,21 +100,53 @@ fun TranslationScreen(
     LaunchedEffect(selectedLanguage?.value, languageType?.value) {
         selectedLanguage?.value?.let { language ->
             when (languageType?.value) {
-                "source" -> {
-                    viewModel.setSourceLanguage(language)
-                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
-                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
-                }
-
-                "target" -> {
-                    viewModel.setTargetLanguage(language)
-                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
-                    navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
-                }
+                "source" -> viewModel.setSourceLanguage(language)
+                "target" -> viewModel.setTargetLanguage(language)
             }
+            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
+            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
         }
     }
 
+    TranslationScreenContent(
+        sourceLanguage = sourceLanguage,
+        targetLanguage = targetLanguage,
+        inputText = inputText,
+        translationState = translationState,
+        onSwapLanguages = {
+            val tempSource = sourceLanguage
+            viewModel.setSourceLanguage(targetLanguage)
+            viewModel.setTargetLanguage(tempSource)
+        },
+        onSourceLanguageChange = {
+            navController.navigate("languageSelection/source") {
+                launchSingleTop = true
+                restoreState = true
+            }
+        },
+        onTargetLanguageChange = {
+            navController.navigate("languageSelection/target") {
+                launchSingleTop = true
+                restoreState = true
+            }
+        },
+        onInputTextChange = viewModel::updateInputText,
+        onTranslate = viewModel::translate,
+    )
+}
+
+@Composable
+fun TranslationScreenContent(
+    sourceLanguage: String,
+    targetLanguage: String,
+    inputText: String,
+    translationState: TranslationState,
+    onSwapLanguages: () -> Unit,
+    onSourceLanguageChange: () -> Unit,
+    onTargetLanguageChange: () -> Unit,
+    onInputTextChange: (String) -> Unit,
+    onTranslate: () -> Unit,
+) {
     Column(
         modifier =
             Modifier
@@ -125,42 +159,33 @@ fun TranslationScreen(
         LanguageSelector(
             sourceLanguage = sourceLanguage,
             targetLanguage = targetLanguage,
-            onSwapLanguages = {
-                val tempSource = sourceLanguage
-                viewModel.setSourceLanguage(targetLanguage)
-                viewModel.setTargetLanguage(tempSource)
-            },
-            onSourceLanguageChange = {
-                navController.navigate("languageSelection/source") {
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            onTargetLanguageChange = {
-                navController.navigate("languageSelection/target") {
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
+            onSwapLanguages = onSwapLanguages,
+            onSourceLanguageChange = onSourceLanguageChange,
+            onTargetLanguageChange = onTargetLanguageChange,
         )
         Spacer(modifier = Modifier.height(16.dp))
-        TranslationArea(viewModel)
+        TranslationArea(
+            inputText = inputText,
+            translationState = translationState,
+            onInputTextChange = onInputTextChange,
+            onTranslate = onTranslate,
+        )
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun TranslationArea(viewModel: TranslationViewModel = hiltViewModel()) {
-    val inputText by viewModel.inputText.collectAsState()
-    val translationState by viewModel.translationResult.collectAsState()
-
+fun TranslationArea(
+    inputText: String,
+    translationState: TranslationState,
+    onInputTextChange: (String) -> Unit,
+    onTranslate: () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Input area
         BasicTextField(
             value = inputText,
-            onValueChange = { newText ->
-                viewModel.updateInputText(newText)
-            },
+            onValueChange = onInputTextChange,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -187,7 +212,7 @@ fun TranslationArea(viewModel: TranslationViewModel = hiltViewModel()) {
 
         // Translate button
         Button(
-            onClick = { viewModel.translate() },
+            onClick = onTranslate,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -221,7 +246,7 @@ fun TranslationArea(viewModel: TranslationViewModel = hiltViewModel()) {
 
                 is TranslationState.Success -> {
                     Text(
-                        text = (translationState as TranslationState.Success).translatedText,
+                        text = translationState.translatedText,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                     )
@@ -229,7 +254,7 @@ fun TranslationArea(viewModel: TranslationViewModel = hiltViewModel()) {
 
                 is TranslationState.Error -> {
                     Text(
-                        text = (translationState as TranslationState.Error).message,
+                        text = translationState.message,
                         color = Color.Red,
                         fontSize = 18.sp,
                     )
