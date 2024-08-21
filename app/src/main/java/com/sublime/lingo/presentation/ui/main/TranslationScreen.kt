@@ -62,6 +62,7 @@ fun TranslationApp(viewModel: TranslationViewModel = hiltViewModel()) {
     val targetLanguage by viewModel.targetLanguage.collectAsState()
     val chatMessages by viewModel.chatMessages.collectAsState()
     val inputText by viewModel.inputText.collectAsState()
+    val isTyping by viewModel.isTyping.collectAsState()
 
     NavHost(navController, startDestination = "translation") {
         composable("translation") {
@@ -70,6 +71,7 @@ fun TranslationApp(viewModel: TranslationViewModel = hiltViewModel()) {
                 targetLanguage = targetLanguage,
                 chatMessages = chatMessages,
                 inputText = inputText,
+                isTyping = isTyping,
                 onInputTextChange = viewModel::updateInputText,
                 onSendClick = viewModel::sendMessage,
                 onSwapLanguages = viewModel::swapLanguages,

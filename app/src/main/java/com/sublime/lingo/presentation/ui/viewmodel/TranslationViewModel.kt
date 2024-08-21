@@ -25,6 +25,9 @@ class TranslationViewModel
         private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
         val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
 
+        private val _isTyping = MutableStateFlow(false)
+        val isTyping: StateFlow<Boolean> = _isTyping.asStateFlow()
+
         val sourceLanguage = savedStateHandle.getStateFlow("sourceLanguage", "en")
         val targetLanguage = savedStateHandle.getStateFlow("targetLanguage", "hi")
 
@@ -59,6 +62,7 @@ class TranslationViewModel
 
                 // Clear input text
                 _inputText.value = ""
+                _isTyping.value = true // Start typing indicator
 
                 // Perform translation
                 try {
@@ -84,6 +88,8 @@ class TranslationViewModel
                     val errorMessage =
                         ChatMessage("An unexpected error occurred: ${e.message}", isUser = false)
                     _chatMessages.value += errorMessage
+                } finally {
+                    _isTyping.value = false // Stop typing indicator
                 }
             }
         }

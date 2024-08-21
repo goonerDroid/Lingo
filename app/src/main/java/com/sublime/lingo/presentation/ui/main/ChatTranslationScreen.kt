@@ -1,5 +1,16 @@
 package com.sublime.lingo.presentation.ui.main
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,11 +26,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
@@ -28,11 +41,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -44,6 +64,7 @@ fun ChatTranslationScreen(
     targetLanguage: String,
     chatMessages: List<ChatMessage>,
     inputText: String,
+    isTyping: Boolean,
     onInputTextChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onSwapLanguages: () -> Unit,
@@ -51,6 +72,30 @@ fun ChatTranslationScreen(
     onTargetLanguageChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Function to scroll to bottom
+    fun scrollToBottom() {
+        coroutineScope.launch {
+            listState.animateScrollToItem(0)
+        }
+    }
+
+    // Calculate if we should show the scroll button
+    val showScrollButton by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 20 // Show after scrolling past 20 items
+        }
+    }
+
+    // Automatically scroll to bottom when a new message is added or typing starts
+    LaunchedEffect(chatMessages.size, isTyping) {
+        if (listState.firstVisibleItemIndex == 0) {
+            scrollToBottom()
+        }
+    }
+
     Column(
         modifier =
             modifier
@@ -65,30 +110,76 @@ fun ChatTranslationScreen(
             onSourceLanguageChange = onSourceLanguageChange,
             onTargetLanguageChange = onTargetLanguageChange,
         )
-        ChatMessageList(
-            messages = chatMessages,
-            modifier = Modifier.weight(1f),
-        )
+        Box(modifier = Modifier.weight(1f)) {
+            LazyColumn(
+                state = listState,
+                reverseLayout = true,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (isTyping) {
+                    item {
+                        TypingIndicator(
+                            modifier =
+                                Modifier
+                                    .padding(start = 16.dp, bottom = 8.dp),
+                        )
+                    }
+                }
+                items(chatMessages.reversed()) { message ->
+                    ChatMessageItem(message)
+                }
+            }
+            AnimatedScrollToBottomButton(
+                visible = showScrollButton,
+                onClick = { scrollToBottom() },
+            )
+        }
         InputArea(
             inputText = inputText,
             onInputTextChange = onInputTextChange,
-            onSendClick = onSendClick,
+            onSendClick = {
+                onSendClick()
+                scrollToBottom()
+            },
         )
     }
 }
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun ChatMessageList(
-    messages: List<ChatMessage>,
-    modifier: Modifier = Modifier,
+fun AnimatedScrollToBottomButton(
+    visible: Boolean,
+    onClick: () -> Unit,
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        reverseLayout = true,
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+        exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
     ) {
-        items(messages.reversed()) { message ->
-            ChatMessageItem(message)
+        ScrollToBottomButton(onClick = onClick)
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun ScrollToBottomButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomEnd,
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier =
+                Modifier
+                    .padding(16.dp)
+                    .size(48.dp)
+                    .background(Color.Gray, CircleShape),
+        ) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = "Scroll to bottom",
+                tint = Color.White,
+            )
         }
     }
 }
@@ -172,6 +263,48 @@ fun MessageIcon(
             tint = Color.Gray,
         )
     }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun TypingIndicator(modifier: Modifier = Modifier) {
+    Row(
+        modifier =
+            modifier
+                .widthIn(max = 100.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Gray.copy(alpha = 0.1f))
+                .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(3) { index ->
+            AnimatedDot()
+            if (index < 2) Spacer(modifier = Modifier.width(4.dp))
+        }
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun AnimatedDot(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(500, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "",
+    )
+
+    Box(
+        modifier =
+            modifier
+                .size(8.dp * scale)
+                .background(Color.Gray, CircleShape),
+    )
 }
 
 fun formatTimestamp(timestamp: Long): String {
