@@ -118,4 +118,8 @@ fun getFlagResource(
 }
 
 // Get the language name from the language code
-fun getLanguageName(languageCode: String): String = getSupportedLanguages().find { it.second == languageCode }?.first ?: "Unknown"
+fun getLanguageName(languageCode: String): String =
+    getSupportedLanguages()
+        .find {
+            it.second == languageCode
+        }?.first ?: "Unknown"

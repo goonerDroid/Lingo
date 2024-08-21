@@ -1,8 +1,10 @@
 package com.sublime.lingo.presentation.ui.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sublime.lingo.data.repository.TranslationRepository
+import com.sublime.lingo.presentation.ui.main.ChatMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,46 +12,50 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Suppress("MemberVisibilityCanBePrivate")
 @HiltViewModel
 class TranslationViewModel
     @Inject
     constructor(
         private val repository: TranslationRepository,
+        private val savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         private val _inputText = MutableStateFlow("")
         val inputText: StateFlow<String> = _inputText.asStateFlow()
 
-        private val _translationResult = MutableStateFlow<TranslationState>(TranslationState.Idle)
-        val translationResult: StateFlow<TranslationState> = _translationResult.asStateFlow()
+        private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+        val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
 
-        private val _sourceLanguage = MutableStateFlow("en")
-        val sourceLanguage: StateFlow<String> = _sourceLanguage.asStateFlow()
-
-        private val _targetLanguage = MutableStateFlow("hi")
-        val targetLanguage: StateFlow<String> = _targetLanguage.asStateFlow()
+        val sourceLanguage = savedStateHandle.getStateFlow("sourceLanguage", "en")
+        val targetLanguage = savedStateHandle.getStateFlow("targetLanguage", "hi")
 
         fun updateInputText(newText: String) {
             _inputText.value = newText
         }
 
         fun setSourceLanguage(language: String) {
-            _sourceLanguage.value = language
+            savedStateHandle["sourceLanguage"] = language
         }
 
         fun setTargetLanguage(language: String) {
-            _targetLanguage.value = language
+            savedStateHandle["targetLanguage"] = language
         }
 
-        fun translate() {
-            viewModelScope.launch {
-                val textToTranslate = inputText.value
-                if (textToTranslate.isBlank()) {
-                    _translationResult.value = TranslationState.Error("Please enter text to translate")
-                    return@launch
-                }
+        fun swapLanguages() {
+            val currentSource = sourceLanguage.value
+            val currentTarget = targetLanguage.value
 
-                _translationResult.value = TranslationState.Loading
+            setSourceLanguage(currentTarget)
+            setTargetLanguage(currentSource)
+        }
+
+        fun sendMessage() {
+            val textToTranslate = _inputText.value
+            if (textToTranslate.isBlank()) return
+
+            viewModelScope.launch {
+                _chatMessages.value += ChatMessage(textToTranslate, isUser = true)
+                _inputText.value = ""
+
                 try {
                     val result =
                         repository.translate(
@@ -59,31 +65,28 @@ class TranslationViewModel
                         )
                     result.fold(
                         onSuccess = { translatedText ->
-                            _translationResult.value = TranslationState.Success(translatedText)
+                            _chatMessages.value +=
+                                ChatMessage(
+                                    textToTranslate,
+                                    translatedText,
+                                    isUser = false,
+                                )
                         },
                         onFailure = { error ->
-                            _translationResult.value =
-                                TranslationState.Error("Translation failed: ${error.message}")
+                            _chatMessages.value +=
+                                ChatMessage(
+                                    "Translation failed: ${error.message}",
+                                    isUser = false,
+                                )
                         },
                     )
                 } catch (e: Exception) {
-                    _translationResult.value =
-                        TranslationState.Error("An unexpected error occurred: ${e.message}")
+                    _chatMessages.value +=
+                        ChatMessage(
+                            "An unexpected error occurred: ${e.message}",
+                            isUser = false,
+                        )
                 }
             }
         }
     }
-
-sealed class TranslationState {
-    data object Idle : TranslationState()
-
-    data object Loading : TranslationState()
-
-    data class Success(
-        val translatedText: String,
-    ) : TranslationState()
-
-    data class Error(
-        val message: String,
-    ) : TranslationState()
-}

@@ -1,6 +1,6 @@
 package com.sublime.lingo.presentation.ui.main
 
-import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -21,18 +21,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,237 +39,77 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.google.accompanist.navigation.animation.rememberAnimatedNavController
-import com.google.accompanist.navigation.material.ExperimentalMaterialNavigationApi
-import com.google.accompanist.navigation.material.rememberBottomSheetNavigator
+import androidx.navigation.compose.rememberNavController
 import com.sublime.lingo.R
 import com.sublime.lingo.presentation.ui.getFlagResource
 import com.sublime.lingo.presentation.ui.getLanguageName
 import com.sublime.lingo.presentation.ui.getSupportedLanguages
-import com.sublime.lingo.presentation.ui.viewmodel.TranslationState
 import com.sublime.lingo.presentation.ui.viewmodel.TranslationViewModel
 
-@OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun TranslationApp() {
-    val bottomSheetNavigator = rememberBottomSheetNavigator()
-    val navController = rememberAnimatedNavController(bottomSheetNavigator)
+fun TranslationApp(viewModel: TranslationViewModel = hiltViewModel()) {
+    val navController = rememberNavController()
+    val sourceLanguage by viewModel.sourceLanguage.collectAsState()
+    val targetLanguage by viewModel.targetLanguage.collectAsState()
+    val chatMessages by viewModel.chatMessages.collectAsState()
+    val inputText by viewModel.inputText.collectAsState()
+
     NavHost(navController, startDestination = "translation") {
         composable("translation") {
-            TranslationScreen(navController)
+            ChatTranslationScreen(
+                sourceLanguage = sourceLanguage,
+                targetLanguage = targetLanguage,
+                chatMessages = chatMessages,
+                inputText = inputText,
+                onInputTextChange = viewModel::updateInputText,
+                onSendClick = viewModel::sendMessage,
+                onSwapLanguages = viewModel::swapLanguages,
+                onSourceLanguageChange = {
+                    navController.navigate("languageSelection/source")
+                },
+                onTargetLanguageChange = {
+                    navController.navigate("languageSelection/target")
+                },
+            )
         }
         composable("languageSelection/{languageType}") { backStackEntry ->
             val languageType = backStackEntry.arguments?.getString("languageType")
-            LanguageSelectionScreen(navController, languageType)
-        }
-    }
-}
-
-@Composable
-fun TranslationScreen(
-    navController: NavHostController,
-    viewModel: TranslationViewModel = hiltViewModel(),
-) {
-    val sourceLanguage by viewModel.sourceLanguage.collectAsState()
-    val targetLanguage by viewModel.targetLanguage.collectAsState()
-    val inputText by viewModel.inputText.collectAsState()
-    val translationState by viewModel.translationResult.collectAsState()
-
-    val selectedLanguage =
-        navController.currentBackStackEntry
-            ?.savedStateHandle
-            ?.getLiveData<String>("selectedLanguage")
-            ?.observeAsState()
-    val languageType =
-        navController.currentBackStackEntry
-            ?.savedStateHandle
-            ?.getLiveData<String>("languageType")
-            ?.observeAsState()
-
-    LaunchedEffect(selectedLanguage?.value, languageType?.value) {
-        selectedLanguage?.value?.let { language ->
-            when (languageType?.value) {
-                "source" -> viewModel.setSourceLanguage(language)
-                "target" -> viewModel.setTargetLanguage(language)
-            }
-            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("selectedLanguage")
-            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("languageType")
-        }
-    }
-
-    TranslationScreenContent(
-        sourceLanguage = sourceLanguage,
-        targetLanguage = targetLanguage,
-        inputText = inputText,
-        translationState = translationState,
-        onSwapLanguages = {
-            val tempSource = sourceLanguage
-            viewModel.setSourceLanguage(targetLanguage)
-            viewModel.setTargetLanguage(tempSource)
-        },
-        onSourceLanguageChange = {
-            navController.navigate("languageSelection/source") {
-                launchSingleTop = true
-                restoreState = true
-            }
-        },
-        onTargetLanguageChange = {
-            navController.navigate("languageSelection/target") {
-                launchSingleTop = true
-                restoreState = true
-            }
-        },
-        onInputTextChange = viewModel::updateInputText,
-        onTranslate = viewModel::translate,
-    )
-}
-
-@Composable
-fun TranslationScreenContent(
-    sourceLanguage: String,
-    targetLanguage: String,
-    inputText: String,
-    translationState: TranslationState,
-    onSwapLanguages: () -> Unit,
-    onSourceLanguageChange: () -> Unit,
-    onTargetLanguageChange: () -> Unit,
-    onInputTextChange: (String) -> Unit,
-    onTranslate: () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(16.dp),
-    ) {
-        TopBar()
-        Spacer(modifier = Modifier.height(32.dp))
-        LanguageSelector(
-            sourceLanguage = sourceLanguage,
-            targetLanguage = targetLanguage,
-            onSwapLanguages = onSwapLanguages,
-            onSourceLanguageChange = onSourceLanguageChange,
-            onTargetLanguageChange = onTargetLanguageChange,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        TranslationArea(
-            inputText = inputText,
-            translationState = translationState,
-            onInputTextChange = onInputTextChange,
-            onTranslate = onTranslate,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-@Composable
-fun TranslationArea(
-    inputText: String,
-    translationState: TranslationState,
-    onInputTextChange: (String) -> Unit,
-    onTranslate: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Input area
-        BasicTextField(
-            value = inputText,
-            onValueChange = onInputTextChange,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            textStyle = TextStyle(fontSize = 18.sp),
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                ) {
-                    if (inputText.isEmpty()) {
-                        Text(
-                            "Type the text to translate",
-                            color = Color.Gray,
-                            fontSize = 18.sp,
-                        )
+            LanguageSelectionScreen(
+                languageType = languageType,
+                sourceLanguage = sourceLanguage,
+                targetLanguage = targetLanguage,
+                onLanguageSelect = { selectedLanguage ->
+                    when (languageType) {
+                        "source" -> viewModel.setSourceLanguage(selectedLanguage)
+                        "target" -> viewModel.setTargetLanguage(selectedLanguage)
                     }
-                    innerTextField()
-                }
-            },
-        )
-
-        // Translate button
-        Button(
-            onClick = onTranslate,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-        ) {
-            Text("Translate")
-        }
-
-        Divider(color = Color.LightGray, thickness = 1.dp)
-
-        // Output area
-        Box(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(16.dp),
-        ) {
-            when (translationState) {
-                is TranslationState.Idle -> {
-                    Text(
-                        "Translation will appear here",
-                        color = Color.Gray,
-                        fontSize = 18.sp,
-                    )
-                }
-
-                is TranslationState.Loading -> {
-                    CircularProgressIndicator()
-                }
-
-                is TranslationState.Success -> {
-                    Text(
-                        text = translationState.translatedText,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-
-                is TranslationState.Error -> {
-                    Text(
-                        text = translationState.message,
-                        color = Color.Red,
-                        fontSize = 18.sp,
-                    )
-                }
-            }
+                    navController.popBackStack()
+                },
+            )
         }
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun AnimatedSwapLanguageButton(onSwapLanguages: () -> Unit) {
+fun AnimatedSwapLanguageButton(
+    onSwapLanguages: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var isRotated by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
         targetValue = if (isRotated) 180f else 0f,
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-        label = "",
+        label = "rotationAnimation",
     )
 
     IconButton(
@@ -283,7 +118,7 @@ fun AnimatedSwapLanguageButton(onSwapLanguages: () -> Unit) {
             onSwapLanguages()
         },
         modifier =
-            Modifier
+            modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(Color.LightGray),
@@ -299,6 +134,7 @@ fun AnimatedSwapLanguageButton(onSwapLanguages: () -> Unit) {
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun LanguageSelector(
     sourceLanguage: String,
@@ -306,9 +142,10 @@ fun LanguageSelector(
     onSwapLanguages: () -> Unit,
     onSourceLanguageChange: () -> Unit,
     onTargetLanguageChange: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -324,16 +161,18 @@ fun LanguageSelector(
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun LanguageButton(
     languageItem: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(Color.LightGray),
         modifier =
-            Modifier
+            modifier
                 .padding(horizontal = 8.dp)
                 .height(50.dp)
                 .width(135.dp)
@@ -361,11 +200,12 @@ fun LanguageButton(
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
-fun TopBar() {
+fun TopBar(modifier: Modifier = Modifier) {
     Box(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
     ) {
@@ -375,55 +215,76 @@ fun TopBar() {
             fontWeight = FontWeight.Bold,
             color = Color.Black,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.align(Alignment.Center),
         )
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun LanguageSelectionScreen(
-    navController: NavHostController,
     languageType: String?,
+    sourceLanguage: String,
+    targetLanguage: String,
+    onLanguageSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    val availableLanguages =
+        remember(sourceLanguage, targetLanguage, languageType) {
+            getSupportedLanguages().filter { (_, code) ->
+                when (languageType) {
+                    "source" -> code != sourceLanguage && code != targetLanguage
+                    "target" -> code != sourceLanguage && code != targetLanguage
+                    else -> true
+                }
+            }
+        }
+
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .background(Color.White),
     ) {
         TopBar()
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
         ) {
-            items(getSupportedLanguages()) { language ->
+            items(availableLanguages) { language ->
                 LanguageListItem(
                     languageCode = language.second,
-                    onClick = {
-                        navController.previousBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("selectedLanguage", language.second)
-                        navController.previousBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("languageType", languageType)
-                        navController.popBackStack()
-                    },
+                    onClick = { onLanguageSelect(language.second) },
                 )
             }
         }
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun LanguageListItem(
     languageCode: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    var isSelected by remember { mutableStateOf(false) }
+    val backgroundColor by animateColorAsState(
+        if (isSelected) Color.LightGray else Color.Transparent,
+        label = "backgroundColorAnimation",
+    )
+
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(16.dp),
+                .background(backgroundColor)
+                .clickable {
+                    isSelected = true
+                    onClick()
+                }.padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
