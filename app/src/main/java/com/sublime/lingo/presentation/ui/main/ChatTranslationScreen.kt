@@ -1,6 +1,7 @@
 package com.sublime.lingo.presentation.ui.main
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,16 +10,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -26,8 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
@@ -93,37 +100,82 @@ fun ChatMessageItem(
 ) {
     val backgroundColor =
         if (message.isUser) Color.Blue.copy(alpha = 0.1f) else Color.Gray.copy(alpha = 0.1f)
-    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
 
-    Box(
+    Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(8.dp),
-        contentAlignment = alignment,
+        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .widthIn(max = 300.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(backgroundColor)
-                    .padding(12.dp),
-        ) {
-            Text(
-                text = message.text,
-                color = Color.Black,
-            )
-            if (!message.isUser) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = message.translatedText ?: "",
-                    color = Color.Gray,
-                    fontStyle = FontStyle.Italic,
-                )
+        if (!message.isUser) {
+            MessageIcon(isUser = false)
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+
+        Column {
+            Box(
+                modifier =
+                    Modifier
+                        .widthIn(max = 250.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(backgroundColor)
+                        .padding(12.dp),
+            ) {
+                Column {
+                    if (message.isUser) {
+                        Text(
+                            text = message.text,
+                            color = Color.Black,
+                        )
+                    } else {
+                        Text(
+                            text = message.translatedText ?: "",
+                            color = Color.Black,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = formatTimestamp(message.timestamp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.DarkGray.copy(alpha = 0.7f),
+                        modifier = Modifier.align(Alignment.End),
+                    )
+                }
             }
         }
+
+        if (message.isUser) {
+            Spacer(modifier = Modifier.width(4.dp))
+            MessageIcon(isUser = true)
+        }
     }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun MessageIcon(
+    isUser: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(40.dp)
+                .background(Color.LightGray, CircleShape)
+                .padding(8.dp),
+    ) {
+        Icon(
+            imageVector = if (isUser) Icons.Default.Person else Icons.Default.Info,
+            contentDescription = if (isUser) "User" else "Translation",
+            tint = Color.White,
+        )
+    }
+}
+
+fun formatTimestamp(timestamp: Long): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
 }
 
 @Suppress("ktlint:standard:function-naming")
@@ -158,4 +210,5 @@ data class ChatMessage(
     val text: String,
     val translatedText: String? = null,
     val isUser: Boolean,
+    val timestamp: Long = System.currentTimeMillis(),
 )

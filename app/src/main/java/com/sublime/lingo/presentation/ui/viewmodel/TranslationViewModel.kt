@@ -53,8 +53,8 @@ class TranslationViewModel
             if (textToTranslate.isBlank()) return
 
             viewModelScope.launch {
-                _chatMessages.value += ChatMessage(textToTranslate, isUser = true)
-                _inputText.value = ""
+                val userMessage = ChatMessage(textToTranslate, isUser = true)
+                _chatMessages.value += userMessage
 
                 try {
                     val result =
@@ -65,27 +65,20 @@ class TranslationViewModel
                         )
                     result.fold(
                         onSuccess = { translatedText ->
-                            _chatMessages.value +=
-                                ChatMessage(
-                                    textToTranslate,
-                                    translatedText,
-                                    isUser = false,
-                                )
+                            val botMessage =
+                                ChatMessage(textToTranslate, translatedText, isUser = false)
+                            _chatMessages.value += botMessage
                         },
                         onFailure = { error ->
-                            _chatMessages.value +=
-                                ChatMessage(
-                                    "Translation failed: ${error.message}",
-                                    isUser = false,
-                                )
+                            val errorMessage =
+                                ChatMessage("Translation failed: ${error.message}", isUser = false)
+                            _chatMessages.value += errorMessage
                         },
                     )
                 } catch (e: Exception) {
-                    _chatMessages.value +=
-                        ChatMessage(
-                            "An unexpected error occurred: ${e.message}",
-                            isUser = false,
-                        )
+                    val errorMessage =
+                        ChatMessage("An unexpected error occurred: ${e.message}", isUser = false)
+                    _chatMessages.value += errorMessage
                 }
             }
         }
