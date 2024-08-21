@@ -53,9 +53,14 @@ class TranslationViewModel
             if (textToTranslate.isBlank()) return
 
             viewModelScope.launch {
+                // Add user message to chat
                 val userMessage = ChatMessage(textToTranslate, isUser = true)
                 _chatMessages.value += userMessage
 
+                // Clear input text
+                _inputText.value = ""
+
+                // Perform translation
                 try {
                     val result =
                         repository.translate(

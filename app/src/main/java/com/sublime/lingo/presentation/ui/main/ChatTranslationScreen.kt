@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -162,13 +163,13 @@ fun MessageIcon(
         modifier =
             modifier
                 .size(40.dp)
-                .background(Color.LightGray, CircleShape)
+                .background(Color.LightGray.copy(alpha = 0.3f), CircleShape)
                 .padding(8.dp),
     ) {
         Icon(
             imageVector = if (isUser) Icons.Default.Person else Icons.Default.Info,
             contentDescription = if (isUser) "User" else "Translation",
-            tint = Color.White,
+            tint = Color.Gray,
         )
     }
 }
@@ -197,7 +198,8 @@ fun InputArea(
             value = inputText,
             onValueChange = onInputTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Type a text to translate") },
+            placeholder = { Text("Type a message") },
+            singleLine = true,
         )
         Spacer(modifier = Modifier.width(8.dp))
         IconButton(onClick = onSendClick) {
