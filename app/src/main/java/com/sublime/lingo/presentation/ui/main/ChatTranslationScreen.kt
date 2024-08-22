@@ -11,8 +11,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,9 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,20 +39,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.sublime.lingo.presentation.ui.formatTimestamp
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
@@ -73,67 +62,48 @@ fun ChatTranslationScreen(
     onTargetLanguageChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
-
-    // Function to scroll to bottom
-    fun scrollToBottom() {
-        coroutineScope.launch {
-            listState.animateScrollToItem(0)
-        }
-    }
-
-    // Calculate if we should show the scroll button
-    val showScrollButton by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > 20 // Show after scrolling past 20 items
-        }
-    }
-
-    // Automatically scroll to bottom when a new message is added or typing starts
-    LaunchedEffect(chatMessages.size, isTyping) {
-        if (listState.firstVisibleItemIndex == 0) {
-            scrollToBottom()
-        }
-    }
-
-    Column(
+    Box(
         modifier =
             modifier
                 .fillMaxSize()
                 .background(Color.White),
     ) {
-        TopBar()
-        LanguageSelector(
-            sourceLanguage = sourceLanguage,
-            targetLanguage = targetLanguage,
-            onSwapLanguages = onSwapLanguages,
-            onSourceLanguageChange = onSourceLanguageChange,
-            onTargetLanguageChange = onTargetLanguageChange,
-        )
-        Box(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            TopBar()
+            LanguageSelector(
+                sourceLanguage = sourceLanguage,
+                targetLanguage = targetLanguage,
+                onSwapLanguages = onSwapLanguages,
+                onSourceLanguageChange = onSourceLanguageChange,
+                onTargetLanguageChange = onTargetLanguageChange,
+            )
             ChatList(
                 chatMessages = chatMessages,
-                listState = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f).padding(bottom = 4.dp),
             )
-            AnimatedScrollToBottomButton(
-                visible = showScrollButton,
-                onClick = { scrollToBottom() },
-            )
-            TypingIndicatorOverlay(
-                isTyping = isTyping,
-                modifier = Modifier.align(Alignment.BottomStart),
+            InputArea(
+                inputText = inputText,
+                onInputTextChange = onInputTextChange,
+                onSendClick = {
+                    onSendClick()
+                },
             )
         }
-        InputArea(
-            inputText = inputText,
-            onInputTextChange = onInputTextChange,
-            onSendClick = {
-                onSendClick()
-                scrollToBottom()
-            },
-        )
+
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 56.dp),
+            contentAlignment = Alignment.BottomStart,
+        ) {
+            TypingIndicatorOverlay(
+                isTyping = isTyping,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+            )
+        }
     }
 }
 
@@ -141,11 +111,9 @@ fun ChatTranslationScreen(
 @Composable
 fun ChatList(
     chatMessages: List<ChatMessage>,
-    listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        state = listState,
         reverseLayout = true,
         modifier = modifier,
     ) {
@@ -164,36 +132,20 @@ fun TypingIndicatorOverlay(
     isTyping: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.BottomStart,
-    ) {
-        AnimatedVisibility(
-            visible = isTyping,
-            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-        ) {
-            TypingIndicator(
-                modifier =
-                    Modifier
-                        .padding(start = 16.dp, bottom = 8.dp, top = 4.dp),
-            )
-        }
-    }
-}
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-fun AnimatedScrollToBottomButton(
-    visible: Boolean,
-    onClick: () -> Unit,
-) {
     AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-        exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+        visible = isTyping,
+        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+        modifier = modifier,
     ) {
-        ScrollToBottomButton(onClick = onClick)
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 8.dp, top = 4.dp),
+        ) {
+            TypingIndicator()
+        }
     }
 }
 
@@ -347,11 +299,6 @@ fun AnimatedDot(modifier: Modifier = Modifier) {
     )
 }
 
-fun formatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-    return sdf.format(Date(timestamp))
-}
-
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun InputArea(
@@ -370,7 +317,7 @@ fun InputArea(
         TextField(
             value = inputText,
             onValueChange = onInputTextChange,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(0.6f),
             placeholder = { Text("Type a sentence to translate") },
             singleLine = true,
         )

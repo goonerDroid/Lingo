@@ -2,6 +2,9 @@ package com.sublime.lingo.presentation.ui
 
 import android.content.Context
 import com.sublime.lingo.R
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 // List of supported languages with their IDs
 fun getSupportedLanguages(): List<Pair<String, String>> =
@@ -123,3 +126,8 @@ fun getLanguageName(languageCode: String): String =
         .find {
             it.second == languageCode
         }?.first ?: "Unknown"
+
+fun formatTimestamp(timestamp: Long): String {
+    val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
+}
