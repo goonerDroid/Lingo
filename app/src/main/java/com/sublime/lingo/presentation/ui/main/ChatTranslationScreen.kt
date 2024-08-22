@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
+
 package com.sublime.lingo.presentation.ui.main
 
 import androidx.compose.animation.AnimatedVisibility
@@ -26,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,19 +36,29 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.sublime.lingo.presentation.ui.formatTimestamp
+import com.sublime.lingo.presentation.ui.smoothScrollToBottom
+import kotlinx.coroutines.launch
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
@@ -113,15 +126,40 @@ fun ChatList(
     chatMessages: List<ChatMessage>,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        reverseLayout = true,
-        modifier = modifier,
-    ) {
-        items(
-            items = chatMessages.reversed(),
-            key = { it.timestamp },
-        ) { message ->
-            ChatMessageItem(message = message)
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val showScrollToBottomButton =
+        remember { derivedStateOf { listState.firstVisibleItemIndex > 1 } }
+
+    Box(modifier = modifier) {
+        LazyColumn(
+            reverseLayout = true,
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(
+                items = chatMessages.reversed(),
+                key = { it.timestamp },
+            ) { message ->
+                ChatMessageItem(message = message)
+            }
+        }
+
+        if (showScrollToBottomButton.value) {
+            ScrollToBottomButton(
+                onClick = {
+                    coroutineScope.launch {
+                        listState.animateScrollToItem(0)
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd),
+            )
+        }
+    }
+
+    LaunchedEffect(chatMessages.size) {
+        if (chatMessages.isNotEmpty()) {
+            listState.smoothScrollToBottom()
         }
     }
 }
@@ -155,24 +193,21 @@ fun ScrollToBottomButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomEnd,
+    FloatingActionButton(
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primary,
+        modifier =
+            modifier
+                .padding(18.dp)
+                .size(36.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(MaterialTheme.colorScheme.secondary),
     ) {
-        IconButton(
-            onClick = onClick,
-            modifier =
-                Modifier
-                    .padding(16.dp)
-                    .size(48.dp)
-                    .background(Color.Gray, CircleShape),
-        ) {
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = "Scroll to bottom",
-                tint = Color.White,
-            )
-        }
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = "Scroll to bottom",
+            tint = Color.White,
+        )
     }
 }
 
@@ -311,19 +346,39 @@ fun InputArea(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(horizontal = 8.dp)
+                .padding(bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
             value = inputText,
             onValueChange = onInputTextChange,
-            modifier = Modifier.weight(0.6f),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(24.dp)),
             placeholder = { Text("Type a sentence to translate") },
             singleLine = true,
+            colors =
+                TextFieldDefaults.textFieldColors(
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                ),
         )
         Spacer(modifier = Modifier.width(8.dp))
-        IconButton(onClick = onSendClick) {
-            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Translate")
+        IconButton(
+            onClick = onSendClick,
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.Send,
+                contentDescription = "Translate",
+                tint = Color.White,
+            )
         }
     }
 }

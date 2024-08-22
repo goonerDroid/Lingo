@@ -1,6 +1,9 @@
 package com.sublime.lingo.presentation.ui
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import androidx.compose.foundation.lazy.LazyListState
 import com.sublime.lingo.R
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -130,4 +133,18 @@ fun getLanguageName(languageCode: String): String =
 fun formatTimestamp(timestamp: Long): String {
     val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+suspend fun LazyListState.smoothScrollToBottom() {
+    val lastItem = layoutInfo.totalItemsCount - 1
+    if (lastItem > -1) {
+        animateScrollToItem(0)
+    }
+}
+
+// Extension function to find the activity from the current context
+fun Context.findActivity(): Activity = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> throw IllegalStateException("Context not an Activity")
 }
