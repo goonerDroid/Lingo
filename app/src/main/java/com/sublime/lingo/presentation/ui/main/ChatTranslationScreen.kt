@@ -13,6 +13,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,10 +49,11 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -116,8 +119,7 @@ fun ChatList(
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val showScrollToBottomButton =
-        remember { derivedStateOf { listState.firstVisibleItemIndex > 1 } }
+    val showScrollToBottomButton = remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         LazyColumn(
@@ -142,14 +144,18 @@ fun ChatList(
             }
         }
 
-        if (showScrollToBottomButton.value) {
+        AnimatedVisibility(
+            visible = showScrollToBottomButton.value,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomEnd),
+        ) {
             ScrollToBottomButton(
                 onClick = {
                     coroutineScope.launch {
                         listState.animateScrollToItem(0)
                     }
                 },
-                modifier = Modifier.align(Alignment.BottomEnd),
             )
         }
     }
@@ -157,7 +163,15 @@ fun ChatList(
     LaunchedEffect(chatMessages.size, isTyping) {
         if (chatMessages.isNotEmpty() || isTyping) {
             listState.animateScrollToItem(0)
+            showScrollToBottomButton.value = false
         }
+    }
+
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .collect { index ->
+                showScrollToBottomButton.value = index > 2
+            }
     }
 }
 
