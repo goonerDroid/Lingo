@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,12 +53,8 @@ import com.sublime.lingo.presentation.ui.getFlagResource
 import com.sublime.lingo.presentation.ui.getLanguageName
 import com.sublime.lingo.presentation.ui.getSupportedLanguages
 import com.sublime.lingo.presentation.ui.theme.DarkPurple
-import com.sublime.lingo.presentation.ui.theme.Pink40
-import com.sublime.lingo.presentation.ui.theme.Pink80
 import com.sublime.lingo.presentation.ui.theme.Purple40
 import com.sublime.lingo.presentation.ui.theme.Purple80
-import com.sublime.lingo.presentation.ui.theme.PurpleGrey40
-import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
 import com.sublime.lingo.presentation.ui.viewmodel.TranslationViewModel
 
 @Suppress("ktlint:standard:function-naming")

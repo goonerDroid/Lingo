@@ -34,9 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -46,7 +44,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -308,27 +305,6 @@ fun ChatMessageItem(
                 }
             }
         }
-    }
-}
-
-@Suppress("ktlint:standard:function-naming")
-@Composable
-fun MessageIcon(
-    isUser: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-            modifier
-                .size(40.dp)
-                .background(Color.LightGray.copy(alpha = 0.3f), CircleShape)
-                .padding(8.dp),
-    ) {
-        Icon(
-            imageVector = if (isUser) Icons.Default.Person else Icons.Default.Info,
-            contentDescription = if (isUser) "User" else "Translation",
-            tint = Color.Gray,
-        )
     }
 }
 
