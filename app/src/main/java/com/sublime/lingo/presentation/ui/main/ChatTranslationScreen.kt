@@ -14,7 +14,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,24 +39,26 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sublime.lingo.presentation.ui.formatTimestamp
-import com.sublime.lingo.presentation.ui.smoothScrollToBottom
 import kotlinx.coroutines.launch
 
 @Suppress("ktlint:standard:function-naming")
@@ -75,48 +76,34 @@ fun ChatTranslationScreen(
     onTargetLanguageChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(Color.White),
+    Column(
+        modifier = modifier.fillMaxSize(),
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            TopBar()
-            LanguageSelector(
-                sourceLanguage = sourceLanguage,
-                targetLanguage = targetLanguage,
-                onSwapLanguages = onSwapLanguages,
-                onSourceLanguageChange = onSourceLanguageChange,
-                onTargetLanguageChange = onTargetLanguageChange,
-            )
-            ChatList(
-                chatMessages = chatMessages,
-                modifier = Modifier.weight(1f).padding(bottom = 4.dp),
-            )
-            InputArea(
-                inputText = inputText,
-                onInputTextChange = onInputTextChange,
-                onSendClick = {
-                    onSendClick()
-                },
-            )
-        }
-
+        TopBar()
+        LanguageSelector(
+            sourceLanguage = sourceLanguage,
+            targetLanguage = targetLanguage,
+            onSwapLanguages = onSwapLanguages,
+            onSourceLanguageChange = onSourceLanguageChange,
+            onTargetLanguageChange = onTargetLanguageChange,
+        )
         Box(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 56.dp),
-            contentAlignment = Alignment.BottomStart,
+                    .weight(1f)
+                    .fillMaxWidth(),
         ) {
-            TypingIndicatorOverlay(
+            ChatList(
+                chatMessages = chatMessages,
                 isTyping = isTyping,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                modifier = Modifier.fillMaxSize(),
             )
         }
+        InputArea(
+            inputText = inputText,
+            onInputTextChange = onInputTextChange,
+            onSendClick = onSendClick,
+        )
     }
 }
 
@@ -124,6 +111,7 @@ fun ChatTranslationScreen(
 @Composable
 fun ChatList(
     chatMessages: List<ChatMessage>,
+    isTyping: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -137,6 +125,15 @@ fun ChatList(
             state = listState,
             modifier = Modifier.fillMaxSize(),
         ) {
+            item {
+                AnimatedVisibility(
+                    visible = isTyping,
+                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+                ) {
+                    TypingIndicatorItem()
+                }
+            }
             items(
                 items = chatMessages.reversed(),
                 key = { it.timestamp },
@@ -157,32 +154,55 @@ fun ChatList(
         }
     }
 
-    LaunchedEffect(chatMessages.size) {
-        if (chatMessages.isNotEmpty()) {
-            listState.smoothScrollToBottom()
+    LaunchedEffect(chatMessages.size, isTyping) {
+        if (chatMessages.isNotEmpty() || isTyping) {
+            listState.animateScrollToItem(0)
         }
     }
 }
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun TypingIndicatorOverlay(
-    isTyping: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    AnimatedVisibility(
-        visible = isTyping,
-        enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-        exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
-        modifier = modifier,
+fun TypingIndicatorItem(modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp, top = 4.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 8.dp, top = 4.dp),
+        ChatBubble(
+            backgroundColor = Color.Gray.copy(alpha = 0.1f),
+            contentColor = Color.Black,
+            cornerRadius = 16.dp,
         ) {
             TypingIndicator()
+        }
+    }
+}
+
+@Suppress("ktlint:compose:modifier-missing-check", "ktlint:standard:function-naming")
+@Composable
+fun ChatBubble(
+    backgroundColor: Color,
+    contentColor: Color,
+    cornerRadius: Dp,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .clip(
+                    RoundedCornerShape(
+                        topStart = cornerRadius,
+                        topEnd = cornerRadius,
+                        bottomStart = 4.dp,
+                        bottomEnd = cornerRadius,
+                    ),
+                ).background(backgroundColor)
+                .padding(12.dp),
+    ) {
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
+            content()
         }
     }
 }
@@ -200,8 +220,7 @@ fun ScrollToBottomButton(
             modifier
                 .padding(18.dp)
                 .size(36.dp)
-                .clip(RoundedCornerShape(28.dp))
-                .background(MaterialTheme.colorScheme.secondary),
+                .clip(RoundedCornerShape(28.dp)),
     ) {
         Icon(
             imageVector = Icons.Filled.KeyboardArrowDown,
@@ -219,26 +238,31 @@ fun ChatMessageItem(
 ) {
     val backgroundColor =
         if (message.isUser) Color.Blue.copy(alpha = 0.1f) else Color.Gray.copy(alpha = 0.1f)
+    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
 
-    Row(
+    Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(8.dp),
-        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        contentAlignment = alignment,
     ) {
-        if (!message.isUser) {
-            MessageIcon(isUser = false)
-            Spacer(modifier = Modifier.width(4.dp))
-        }
-
-        Column {
+        Column(
+            modifier =
+                Modifier
+                    .widthIn(max = 280.dp),
+        ) {
             Box(
                 modifier =
                     Modifier
-                        .widthIn(max = 250.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(backgroundColor)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = if (message.isUser) 16.dp else 4.dp,
+                                bottomEnd = if (message.isUser) 4.dp else 16.dp,
+                            ),
+                        ).background(backgroundColor)
                         .padding(12.dp),
             ) {
                 Column {
@@ -246,11 +270,13 @@ fun ChatMessageItem(
                         Text(
                             text = message.text,
                             color = Color.Black,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     } else {
                         Text(
                             text = message.translatedText ?: "",
                             color = Color.Black,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -262,11 +288,6 @@ fun ChatMessageItem(
                     )
                 }
             }
-        }
-
-        if (message.isUser) {
-            Spacer(modifier = Modifier.width(4.dp))
-            MessageIcon(isUser = true)
         }
     }
 }
@@ -299,9 +320,7 @@ fun TypingIndicator(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .widthIn(max = 70.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.Gray.copy(alpha = 0.1f))
-                .padding(8.dp),
+                .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(3) { index ->
@@ -323,13 +342,14 @@ fun AnimatedDot(modifier: Modifier = Modifier) {
                 animation = tween(500, easing = LinearEasing),
                 repeatMode = RepeatMode.Reverse,
             ),
-        label = "",
+        label = "Animated Dots",
     )
 
     Box(
         modifier =
             modifier
-                .size(8.dp * scale)
+                .size(8.dp)
+                .scale(scale)
                 .background(Color.Gray, CircleShape),
     )
 }
@@ -347,7 +367,7 @@ fun InputArea(
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp)
-                .padding(bottom = 8.dp),
+                .padding(bottom = 8.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
