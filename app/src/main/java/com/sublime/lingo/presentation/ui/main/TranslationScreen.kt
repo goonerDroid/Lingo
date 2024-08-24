@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -52,6 +53,13 @@ import com.sublime.lingo.R
 import com.sublime.lingo.presentation.ui.getFlagResource
 import com.sublime.lingo.presentation.ui.getLanguageName
 import com.sublime.lingo.presentation.ui.getSupportedLanguages
+import com.sublime.lingo.presentation.ui.theme.DarkPurple
+import com.sublime.lingo.presentation.ui.theme.Pink40
+import com.sublime.lingo.presentation.ui.theme.Pink80
+import com.sublime.lingo.presentation.ui.theme.Purple40
+import com.sublime.lingo.presentation.ui.theme.Purple80
+import com.sublime.lingo.presentation.ui.theme.PurpleGrey40
+import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
 import com.sublime.lingo.presentation.ui.viewmodel.TranslationViewModel
 
 @Suppress("ktlint:standard:function-naming")
@@ -123,7 +131,7 @@ fun AnimatedSwapLanguageButton(
             modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.LightGray),
+                .background(Purple40.copy(alpha = 0.2f)),
     ) {
         Image(
             painter = painterResource(id = R.drawable.sync_24dp),
@@ -147,7 +155,7 @@ fun LanguageSelector(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().background(Purple80).height(64.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -172,11 +180,11 @@ fun LanguageButton(
 ) {
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(Color.LightGray),
+        colors = ButtonDefaults.buttonColors(containerColor = Purple40.copy(alpha = 0.2f)),
         modifier =
             modifier
                 .padding(horizontal = 8.dp)
-                .height(50.dp)
+                .height(40.dp)
                 .width(135.dp)
                 .clip(CircleShape),
     ) {
@@ -209,13 +217,15 @@ fun TopBar(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .fillMaxWidth()
+                .height(64.dp)
+                .background(Purple80)
                 .padding(vertical = 8.dp),
     ) {
         Text(
             text = "Lingo",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = DarkPurple,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center),
         )

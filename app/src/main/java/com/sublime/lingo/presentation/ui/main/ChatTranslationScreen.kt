@@ -46,6 +46,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +63,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sublime.lingo.presentation.ui.formatTimestamp
+import com.sublime.lingo.presentation.ui.theme.DarkPurple
+import com.sublime.lingo.presentation.ui.theme.Pink80
+import com.sublime.lingo.presentation.ui.theme.Purple80
+import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
 import kotlinx.coroutines.launch
 
 @Suppress("ktlint:standard:function-naming")
@@ -182,7 +187,7 @@ fun TypingIndicatorItem(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 8.dp, top = 4.dp),
+                .padding(start = 8.dp, end = 8.dp, bottom = 8.dp, top = 4.dp),
     ) {
         ChatBubble(
             backgroundColor = Color.Gray.copy(alpha = 0.1f),
@@ -229,7 +234,7 @@ fun ScrollToBottomButton(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        containerColor = MaterialTheme.colorScheme.primary,
+        containerColor = Pink80,
         modifier =
             modifier
                 .padding(18.dp)
@@ -251,7 +256,7 @@ fun ChatMessageItem(
     modifier: Modifier = Modifier,
 ) {
     val backgroundColor =
-        if (message.isUser) Color.Blue.copy(alpha = 0.1f) else Color.Gray.copy(alpha = 0.1f)
+        if (message.isUser) Purple80.copy(alpha = 0.3f) else Pink80.copy(alpha = 0.3f)
     val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
 
     Box(
@@ -390,13 +395,19 @@ fun InputArea(
             modifier =
                 Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(24.dp)),
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(PurpleGrey80),
             placeholder = { Text("Type a sentence to translate") },
             singleLine = true,
             colors =
                 TextFieldDefaults.textFieldColors(
+                    containerColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    focusedPlaceholderColor = Color.Black,
+                    unfocusedPlaceholderColor = Color.Black,
                 ),
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -406,12 +417,12 @@ fun InputArea(
                 Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(28.dp))
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(Purple80),
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Translate",
-                tint = Color.White,
+                tint = DarkPurple,
             )
         }
     }
