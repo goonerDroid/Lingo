@@ -1,4 +1,6 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
+@file:OptIn(
+    ExperimentalMaterial3Api::class,
+)
 
 package com.sublime.lingo.presentation.ui.main
 
@@ -187,7 +189,7 @@ fun TypingIndicatorItem(modifier: Modifier = Modifier) {
                 .padding(start = 8.dp, end = 8.dp, bottom = 8.dp, top = 4.dp),
     ) {
         ChatBubble(
-            backgroundColor = Color.Gray.copy(alpha = 0.1f),
+            backgroundColor = Pink80.copy(alpha = 0.3f),
             contentColor = Color.Black,
             cornerRadius = 16.dp,
         ) {
