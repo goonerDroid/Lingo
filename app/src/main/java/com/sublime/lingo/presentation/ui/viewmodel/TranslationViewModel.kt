@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sublime.lingo.data.repository.TranslationRepository
+import com.sublime.lingo.presentation.ui.DeviceIdManager
 import com.sublime.lingo.presentation.ui.main.ChatMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ class TranslationViewModel
     constructor(
         private val repository: TranslationRepository,
         private val savedStateHandle: SavedStateHandle,
+        deviceIdManager: DeviceIdManager,
     ) : ViewModel() {
         private val _inputText = MutableStateFlow("")
         val inputText: StateFlow<String> = _inputText.asStateFlow()
@@ -31,8 +33,7 @@ class TranslationViewModel
         val sourceLanguage = savedStateHandle.getStateFlow("sourceLanguage", "en")
         val targetLanguage = savedStateHandle.getStateFlow("targetLanguage", "hi")
 
-        // Assume a fixed user ID for now. In a real app, this would come from user authentication.
-        private val userId = "user123" // TODO Add auth flow
+        private val deviceId: String = deviceIdManager.getDeviceId()
 
         init {
             loadConversationHistory()
@@ -40,7 +41,7 @@ class TranslationViewModel
 
         private fun loadConversationHistory() {
             viewModelScope.launch {
-                val history = repository.getConversationHistory(userId)
+                val history = repository.getConversationHistory(deviceId)
                 _chatMessages.value = history
             }
         }
@@ -73,7 +74,7 @@ class TranslationViewModel
                 // Add user message to chat and save it to history
                 val userMessage = ChatMessage(textToTranslate, isUser = true)
                 _chatMessages.value += userMessage
-                repository.saveConversationHistoryItem(userId, userMessage)
+                repository.saveConversationHistoryItem(deviceId, userMessage)
 
                 // Clear input text
                 _inputText.value = ""
@@ -92,20 +93,20 @@ class TranslationViewModel
                             val botMessage =
                                 ChatMessage(textToTranslate, translatedText, isUser = false)
                             _chatMessages.value += botMessage
-                            repository.saveConversationHistoryItem(userId, botMessage)
+                            repository.saveConversationHistoryItem(deviceId, botMessage)
                         },
                         onFailure = { error ->
                             val errorMessage =
                                 ChatMessage("Translation failed: ${error.message}", isUser = false)
                             _chatMessages.value += errorMessage
-                            repository.saveConversationHistoryItem(userId, errorMessage)
+                            repository.saveConversationHistoryItem(deviceId, errorMessage)
                         },
                     )
                 } catch (e: Exception) {
                     val errorMessage =
                         ChatMessage("An unexpected error occurred: ${e.message}", isUser = false)
                     _chatMessages.value += errorMessage
-                    repository.saveConversationHistoryItem(userId, errorMessage)
+                    repository.saveConversationHistoryItem(deviceId, errorMessage)
                 } finally {
                     _isTyping.value = false // Stop typing indicator
                 }
@@ -114,7 +115,7 @@ class TranslationViewModel
 
         fun clearConversationHistory() {
             viewModelScope.launch {
-                repository.clearConversationHistory(userId)
+                repository.clearConversationHistory(deviceId)
                 _chatMessages.value = emptyList()
             }
         }

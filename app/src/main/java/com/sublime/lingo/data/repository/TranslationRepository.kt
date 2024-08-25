@@ -53,13 +53,13 @@ class TranslationRepository
             }
 
         suspend fun saveConversationHistoryItem(
-            userId: String,
+            deviceId: String,
             chatMessage: ChatMessage,
         ) {
             withContext(Dispatchers.IO) {
                 val historyItem =
                     ConversationHistoryEntity(
-                        userId = userId,
+                        deviceId = deviceId,
                         message = chatMessage.text,
                         translatedMessage = chatMessage.translatedText,
                         isUser = chatMessage.isUser,
@@ -69,9 +69,9 @@ class TranslationRepository
             }
         }
 
-        suspend fun getConversationHistory(userId: String): List<ChatMessage> =
+        suspend fun getConversationHistory(deviceId: String): List<ChatMessage> =
             withContext(Dispatchers.IO) {
-                translationDao.getConversationHistory(userId).map { entity ->
+                translationDao.getConversationHistory(deviceId).map { entity ->
                     ChatMessage(
                         text = entity.message,
                         translatedText = entity.translatedMessage,
@@ -81,9 +81,9 @@ class TranslationRepository
                 }
             }
 
-        suspend fun clearConversationHistory(userId: String) {
+        suspend fun clearConversationHistory(deviceId: String) {
             withContext(Dispatchers.IO) {
-                translationDao.clearConversationHistory(userId)
+                translationDao.clearConversationHistory(deviceId)
             }
         }
     }

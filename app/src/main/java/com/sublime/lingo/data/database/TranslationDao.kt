@@ -20,13 +20,12 @@ interface TranslationDao {
     @Query("DELETE FROM translations")
     suspend fun deleteAllTranslations()
 
-    // New methods for conversation history
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConversationHistoryItem(item: ConversationHistoryEntity)
 
-    @Query("SELECT * FROM conversation_history WHERE userId = :userId ORDER BY timestamp ASC")
-    suspend fun getConversationHistory(userId: String): List<ConversationHistoryEntity>
+    @Query("SELECT * FROM conversation_history WHERE deviceId = :deviceId ORDER BY timestamp ASC")
+    suspend fun getConversationHistory(deviceId: String): List<ConversationHistoryEntity>
 
-    @Query("DELETE FROM conversation_history WHERE userId = :userId")
-    suspend fun clearConversationHistory(userId: String)
+    @Query("DELETE FROM conversation_history WHERE deviceId = :deviceId")
+    suspend fun clearConversationHistory(deviceId: String)
 }

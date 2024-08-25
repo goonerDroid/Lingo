@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "conversation_history")
 data class ConversationHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val userId: String,
+    val deviceId: String,
     val message: String,
     val translatedMessage: String?,
     val isUser: Boolean,

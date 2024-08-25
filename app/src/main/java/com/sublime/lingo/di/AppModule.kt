@@ -1,12 +1,18 @@
 package com.sublime.lingo.di
 
+import android.content.Context
+import androidx.room.Room
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.sublime.lingo.BuildConfig
+import com.sublime.lingo.data.database.AppDatabase
+import com.sublime.lingo.data.database.TranslationDao
 import com.sublime.lingo.data.remote.api.ApiService
+import com.sublime.lingo.presentation.ui.DeviceIdManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -17,7 +23,31 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object NetworkModule {
+object AppModule {
+    @Provides
+    @Singleton
+    fun provideDeviceIdManager(
+        @ApplicationContext context: Context,
+    ): DeviceIdManager = DeviceIdManager(context)
+
+    // Database module
+    @Provides
+    @Singleton
+    fun provideAppDatabase(
+        @ApplicationContext context: Context,
+    ): AppDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                AppDatabase::class.java,
+                AppDatabase.DATABASE_NAME,
+            ).build()
+
+    @Provides
+    @Singleton
+    fun provideTranslationMessageDao(database: AppDatabase): TranslationDao = database.translationDao()
+
+    // Network module
     @Provides
     @Singleton
     fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor =
