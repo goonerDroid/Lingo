@@ -1,9 +1,11 @@
 package com.sublime.lingo.data.repository
 
+import com.sublime.lingo.data.database.ConversationHistoryEntity
 import com.sublime.lingo.data.database.TranslationDao
 import com.sublime.lingo.data.database.TranslationEntity
 import com.sublime.lingo.data.remote.api.ApiService
 import com.sublime.lingo.data.remote.model.TranslationRequest
+import com.sublime.lingo.presentation.ui.main.ChatMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -49,4 +51,39 @@ class TranslationRepository
                     Result.failure(e)
                 }
             }
+
+        suspend fun saveConversationHistoryItem(
+            userId: String,
+            chatMessage: ChatMessage,
+        ) {
+            withContext(Dispatchers.IO) {
+                val historyItem =
+                    ConversationHistoryEntity(
+                        userId = userId,
+                        message = chatMessage.text,
+                        translatedMessage = chatMessage.translatedText,
+                        isUser = chatMessage.isUser,
+                        timestamp = chatMessage.timestamp,
+                    )
+                translationDao.insertConversationHistoryItem(historyItem)
+            }
+        }
+
+        suspend fun getConversationHistory(userId: String): List<ChatMessage> =
+            withContext(Dispatchers.IO) {
+                translationDao.getConversationHistory(userId).map { entity ->
+                    ChatMessage(
+                        text = entity.message,
+                        translatedText = entity.translatedMessage,
+                        isUser = entity.isUser,
+                        timestamp = entity.timestamp,
+                    )
+                }
+            }
+
+        suspend fun clearConversationHistory(userId: String) {
+            withContext(Dispatchers.IO) {
+                translationDao.clearConversationHistory(userId)
+            }
+        }
     }

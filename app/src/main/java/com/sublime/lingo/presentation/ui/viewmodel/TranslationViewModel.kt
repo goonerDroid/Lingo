@@ -31,6 +31,20 @@ class TranslationViewModel
         val sourceLanguage = savedStateHandle.getStateFlow("sourceLanguage", "en")
         val targetLanguage = savedStateHandle.getStateFlow("targetLanguage", "hi")
 
+        // Assume a fixed user ID for now. In a real app, this would come from user authentication.
+        private val userId = "user123" // TODO Add auth flow
+
+        init {
+            loadConversationHistory()
+        }
+
+        private fun loadConversationHistory() {
+            viewModelScope.launch {
+                val history = repository.getConversationHistory(userId)
+                _chatMessages.value = history
+            }
+        }
+
         fun updateInputText(newText: String) {
             _inputText.value = newText
         }
@@ -56,9 +70,10 @@ class TranslationViewModel
             if (textToTranslate.isBlank()) return
 
             viewModelScope.launch {
-                // Add user message to chat (but don't save it to database)
+                // Add user message to chat and save it to history
                 val userMessage = ChatMessage(textToTranslate, isUser = true)
                 _chatMessages.value += userMessage
+                repository.saveConversationHistoryItem(userId, userMessage)
 
                 // Clear input text
                 _inputText.value = ""
@@ -77,21 +92,30 @@ class TranslationViewModel
                             val botMessage =
                                 ChatMessage(textToTranslate, translatedText, isUser = false)
                             _chatMessages.value += botMessage
-                            // The translation is already cached in the repository
+                            repository.saveConversationHistoryItem(userId, botMessage)
                         },
                         onFailure = { error ->
                             val errorMessage =
                                 ChatMessage("Translation failed: ${error.message}", isUser = false)
                             _chatMessages.value += errorMessage
+                            repository.saveConversationHistoryItem(userId, errorMessage)
                         },
                     )
                 } catch (e: Exception) {
                     val errorMessage =
                         ChatMessage("An unexpected error occurred: ${e.message}", isUser = false)
                     _chatMessages.value += errorMessage
+                    repository.saveConversationHistoryItem(userId, errorMessage)
                 } finally {
                     _isTyping.value = false // Stop typing indicator
                 }
+            }
+        }
+
+        fun clearConversationHistory() {
+            viewModelScope.launch {
+                repository.clearConversationHistory(userId)
+                _chatMessages.value = emptyList()
             }
         }
     }
