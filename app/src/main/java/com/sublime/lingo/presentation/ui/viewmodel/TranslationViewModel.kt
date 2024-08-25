@@ -56,7 +56,7 @@ class TranslationViewModel
             if (textToTranslate.isBlank()) return
 
             viewModelScope.launch {
-                // Add user message to chat
+                // Add user message to chat (but don't save it to database)
                 val userMessage = ChatMessage(textToTranslate, isUser = true)
                 _chatMessages.value += userMessage
 
@@ -77,6 +77,7 @@ class TranslationViewModel
                             val botMessage =
                                 ChatMessage(textToTranslate, translatedText, isUser = false)
                             _chatMessages.value += botMessage
+                            // The translation is already cached in the repository
                         },
                         onFailure = { error ->
                             val errorMessage =
