@@ -59,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sublime.lingo.presentation.ui.formatTimestamp
@@ -359,6 +360,7 @@ fun InputArea(
     onSendClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     Row(
         modifier =
             modifier
@@ -390,7 +392,10 @@ fun InputArea(
         )
         Spacer(modifier = Modifier.width(8.dp))
         IconButton(
-            onClick = onSendClick,
+            onClick = {
+                onSendClick()
+                focusManager.clearFocus()
+            },
             modifier =
                 Modifier
                     .size(56.dp)
