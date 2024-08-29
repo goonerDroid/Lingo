@@ -1,12 +1,12 @@
-package com.sublime.lingo.presentation.ui.viewmodel
+package com.sublime.lingo.presentation.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sublime.lingo.data.repository.TranslationRepository
+import com.sublime.lingo.domain.model.ChatMessage
 import com.sublime.lingo.presentation.ui.DeviceIdManager
 import com.sublime.lingo.presentation.ui.TranslationUiState
-import com.sublime.lingo.presentation.ui.main.ChatMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

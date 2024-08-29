@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.sublime.lingo.presentation.ui.composables.TranslationApp
 import com.sublime.lingo.presentation.ui.theme.LingoTheme
 import dagger.hilt.android.AndroidEntryPoint
 

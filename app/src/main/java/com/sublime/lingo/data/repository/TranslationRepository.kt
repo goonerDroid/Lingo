@@ -5,7 +5,7 @@ import com.sublime.lingo.data.database.TranslationDao
 import com.sublime.lingo.data.database.TranslationEntity
 import com.sublime.lingo.data.remote.api.ApiService
 import com.sublime.lingo.data.remote.model.TranslationRequest
-import com.sublime.lingo.presentation.ui.main.ChatMessage
+import com.sublime.lingo.domain.model.ChatMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
