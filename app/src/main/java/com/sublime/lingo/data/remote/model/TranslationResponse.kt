@@ -5,5 +5,5 @@ import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
 data class TranslationResponse(
-    @Json(name = "translationTxt") val translatedText: String,
+    @Json(name = "translation") val translatedText: String,
 )
