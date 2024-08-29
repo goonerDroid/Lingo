@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sublime.lingo.data.repository.TranslationRepository
 import com.sublime.lingo.presentation.ui.DeviceIdManager
+import com.sublime.lingo.presentation.ui.TranslationUiState
 import com.sublime.lingo.presentation.ui.main.ChatMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,14 +23,8 @@ class TranslationViewModel
         private val savedStateHandle: SavedStateHandle,
         deviceIdManager: DeviceIdManager,
     ) : ViewModel() {
-        private val _inputText = MutableStateFlow("")
-        val inputText: StateFlow<String> = _inputText.asStateFlow()
-
-        private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
-        val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
-
-        private val _isTyping = MutableStateFlow(false)
-        val isTyping: StateFlow<Boolean> = _isTyping.asStateFlow()
+        private val _uiState = MutableStateFlow(TranslationUiState())
+        val uiState: StateFlow<TranslationUiState> = _uiState.asStateFlow()
 
         val sourceLanguage = savedStateHandle.getStateFlow("sourceLanguage", "en")
         val targetLanguage = savedStateHandle.getStateFlow("targetLanguage", "hi")
@@ -42,12 +38,12 @@ class TranslationViewModel
         private fun loadConversationHistory() {
             viewModelScope.launch {
                 val history = repository.getConversationHistory(deviceId)
-                _chatMessages.value = history
+                _uiState.update { it.copy(chatMessages = history) }
             }
         }
 
         fun updateInputText(newText: String) {
-            _inputText.value = newText
+            _uiState.update { it.copy(inputText = newText) }
         }
 
         fun setSourceLanguage(language: String) {
@@ -61,26 +57,18 @@ class TranslationViewModel
         fun swapLanguages() {
             val currentSource = sourceLanguage.value
             val currentTarget = targetLanguage.value
-
             setSourceLanguage(currentTarget)
             setTargetLanguage(currentSource)
         }
 
         fun sendMessage() {
-            val textToTranslate = _inputText.value
+            val textToTranslate = uiState.value.inputText
             if (textToTranslate.isBlank()) return
 
             viewModelScope.launch {
-                // Add user message to chat and save it to history
-                val userMessage = ChatMessage(textToTranslate, isUser = true)
-                _chatMessages.value += userMessage
-                repository.saveConversationHistoryItem(deviceId, userMessage)
+                addMessageToChat(ChatMessage(textToTranslate, isUser = true))
+                clearInputAndStartTyping()
 
-                // Clear input text
-                _inputText.value = ""
-                _isTyping.value = true // Start typing indicator
-
-                // Perform translation
                 try {
                     val result =
                         repository.translate(
@@ -90,33 +78,53 @@ class TranslationViewModel
                         )
                     result.fold(
                         onSuccess = { translatedText ->
-                            val botMessage =
-                                ChatMessage(textToTranslate, translatedText, isUser = false)
-                            _chatMessages.value += botMessage
-                            repository.saveConversationHistoryItem(deviceId, botMessage)
+                            addMessageToChat(
+                                ChatMessage(
+                                    textToTranslate,
+                                    translatedText,
+                                    isUser = false,
+                                ),
+                            )
                         },
-                        onFailure = { error ->
-                            val errorMessage =
-                                ChatMessage("Translation failed: ${error.message}", isUser = false)
-                            _chatMessages.value += errorMessage
-                            repository.saveConversationHistoryItem(deviceId, errorMessage)
+                        onFailure = {
+                            handleTranslationError()
                         },
                     )
                 } catch (e: Exception) {
-                    val errorMessage =
-                        ChatMessage("An unexpected error occurred: ${e.message}", isUser = false)
-                    _chatMessages.value += errorMessage
-                    repository.saveConversationHistoryItem(deviceId, errorMessage)
+                    handleTranslationError()
                 } finally {
-                    _isTyping.value = false // Stop typing indicator
+                    stopTyping()
                 }
             }
+        }
+
+        private suspend fun addMessageToChat(message: ChatMessage) {
+            _uiState.update { it.copy(chatMessages = it.chatMessages + message) }
+            repository.saveConversationHistoryItem(deviceId, message)
+        }
+
+        private fun clearInputAndStartTyping() {
+            _uiState.update { it.copy(inputText = "", isTyping = true) }
+        }
+
+        private fun stopTyping() {
+            _uiState.update { it.copy(isTyping = false) }
+        }
+
+        private suspend fun handleTranslationError() {
+            val errorMessage =
+                ChatMessage(
+                    text = "Error!",
+                    translatedText = "Sorry, there was an error processing your request. Please try again!",
+                    isUser = false,
+                )
+            addMessageToChat(errorMessage)
         }
 
         fun clearConversationHistory() {
             viewModelScope.launch {
                 repository.clearConversationHistory(deviceId)
-                _chatMessages.value = emptyList()
+                _uiState.update { it.copy(chatMessages = emptyList()) }
             }
         }
     }
