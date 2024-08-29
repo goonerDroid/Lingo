@@ -12,6 +12,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,7 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -32,13 +32,12 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,13 +47,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.sublime.lingo.domain.model.ChatMessage
 import com.sublime.lingo.presentation.ui.formatTimestamp
-import com.sublime.lingo.presentation.ui.theme.DarkPurple
 import com.sublime.lingo.presentation.ui.theme.Pink80
+import com.sublime.lingo.presentation.ui.theme.Purple40
 import com.sublime.lingo.presentation.ui.theme.Purple80
 import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
 import kotlinx.coroutines.launch
@@ -74,8 +72,15 @@ fun ChatTranslationScreen(
     onTargetLanguageChange: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color(0xFF121212) else Color.White
+    val surfaceColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color(0xFFF3E5F5)
+
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(backgroundColor),
     ) {
         TopBar()
         LanguageSelector(
@@ -84,23 +89,27 @@ fun ChatTranslationScreen(
             onSwapLanguages = onSwapLanguages,
             onSourceLanguageChange = onSourceLanguageChange,
             onTargetLanguageChange = onTargetLanguageChange,
+            isDarkTheme = isDarkTheme,
         )
         Box(
             modifier =
                 Modifier
                     .weight(1f)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .background(surfaceColor),
         ) {
             ChatList(
                 chatMessages = chatMessages,
                 isTyping = isTyping,
                 modifier = Modifier.fillMaxSize(),
+                isDarkTheme = isDarkTheme,
             )
         }
         InputArea(
             inputText = inputText,
             onInputTextChange = onInputTextChange,
             onSendClick = onSendClick,
+            isDarkTheme = isDarkTheme,
         )
     }
 }
@@ -110,6 +119,7 @@ fun ChatTranslationScreen(
 fun ChatList(
     chatMessages: List<ChatMessage>,
     isTyping: Boolean,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -128,14 +138,14 @@ fun ChatList(
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
                     exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
                 ) {
-                    TypingIndicatorItem()
+                    TypingIndicatorItem(isDarkTheme)
                 }
             }
             items(
                 items = chatMessages.reversed(),
                 key = { it.timestamp },
             ) { message ->
-                ChatMessageItem(message = message)
+                ChatMessageItem(message = message, isDarkTheme = isDarkTheme)
             }
         }
 
@@ -176,22 +186,24 @@ fun ChatBubble(
     backgroundColor: Color,
     contentColor: Color,
     cornerRadius: Dp,
+    isDarkTheme: Boolean,
     content: @Composable () -> Unit,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = cornerRadius,
-                        topEnd = cornerRadius,
-                        bottomStart = 4.dp,
-                        bottomEnd = cornerRadius,
-                    ),
-                ).background(backgroundColor)
-                .padding(12.dp),
+    val elevation = if (isDarkTheme) 4.dp else 1.dp
+    Surface(
+        color = backgroundColor,
+        contentColor = contentColor,
+        tonalElevation = elevation,
+        shape =
+            RoundedCornerShape(
+                topStart = cornerRadius,
+                topEnd = cornerRadius,
+                bottomStart = 4.dp,
+                bottomEnd = cornerRadius,
+            ),
+        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
     ) {
-        CompositionLocalProvider(LocalContentColor provides contentColor) {
+        Box(modifier = Modifier.padding(12.dp)) {
             content()
         }
     }
@@ -201,79 +213,67 @@ fun ChatBubble(
 @Composable
 fun ChatMessageItem(
     message: ChatMessage,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val backgroundColor =
-        if (message.isUser) Purple80.copy(alpha = 0.3f) else Pink80.copy(alpha = 0.3f)
+        if (message.isUser) {
+            if (isDarkTheme) Purple80.copy(alpha = 0.5f) else Purple80.copy(alpha = 0.3f)
+        } else {
+            if (isDarkTheme) Pink80.copy(alpha = 0.5f) else Pink80.copy(alpha = 0.3f)
+        }
+    val contentColor = if (isDarkTheme) Color.White else Color.Black
     val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
 
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(vertical = 4.dp),
         contentAlignment = alignment,
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .widthIn(max = 280.dp),
+        ChatBubble(
+            backgroundColor = backgroundColor,
+            contentColor = contentColor,
+            cornerRadius = 16.dp,
+            isDarkTheme = isDarkTheme,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = 16.dp,
-                                topEnd = 16.dp,
-                                bottomStart = if (message.isUser) 16.dp else 4.dp,
-                                bottomEnd = if (message.isUser) 4.dp else 16.dp,
-                            ),
-                        ).background(backgroundColor)
-                        .padding(12.dp),
-            ) {
-                Column {
-                    if (message.isUser) {
-                        Text(
-                            text = message.text,
-                            color = Color.Black,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    } else {
-                        Text(
-                            text = message.translatedText ?: "",
-                            color = Color.Black,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = formatTimestamp(message.timestamp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.DarkGray.copy(alpha = 0.7f),
-                        modifier = Modifier.align(Alignment.End),
-                    )
-                }
+            Column {
+                Text(
+                    text = if (message.isUser) message.text else message.translatedText ?: "",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatTimestamp(message.timestamp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = 0.7f),
+                    modifier = Modifier.align(Alignment.End),
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun InputArea(
     inputText: String,
     onInputTextChange: (String) -> Unit,
     onSendClick: () -> Unit,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val focusManager = LocalFocusManager.current
+    val backgroundColor = if (isDarkTheme) Color(0xFF2C2C2C) else Color.White
+    val contentColor = if (isDarkTheme) Color.White else Color.Black
+
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .padding(bottom = 8.dp, top = 4.dp),
+                .background(backgroundColor)
+                .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
@@ -282,37 +282,32 @@ fun InputArea(
             modifier =
                 Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(PurpleGrey80),
+                    .clip(RoundedCornerShape(24.dp)),
             placeholder = { Text("Type a sentence to translate") },
             singleLine = true,
             colors =
                 TextFieldDefaults.textFieldColors(
-                    containerColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black,
-                    focusedPlaceholderColor = Color.Black,
-                    unfocusedPlaceholderColor = Color.Black,
+                    containerColor = if (isDarkTheme) Color(0xFF3C3C3C) else PurpleGrey80,
+                    focusedTextColor = contentColor,
+                    unfocusedTextColor = contentColor,
+                    focusedPlaceholderColor = contentColor.copy(alpha = 0.6f),
+                    unfocusedPlaceholderColor = contentColor.copy(alpha = 0.6f),
+                    cursorColor = contentColor,
                 ),
         )
         Spacer(modifier = Modifier.width(8.dp))
         IconButton(
-            onClick = {
-                onSendClick()
-                focusManager.clearFocus()
-            },
+            onClick = onSendClick,
             modifier =
                 Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(28.dp))
-                    .background(Purple80),
+                    .background(if (isDarkTheme) Purple80 else Purple40),
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Translate",
-                tint = DarkPurple,
+                tint = if (isDarkTheme) Color.Black else Color.White,
             )
         }
     }

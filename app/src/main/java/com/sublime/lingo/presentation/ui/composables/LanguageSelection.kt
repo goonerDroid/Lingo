@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -52,6 +53,7 @@ import com.sublime.lingo.presentation.ui.theme.Purple80
 @Composable
 fun AnimatedSwapLanguageButton(
     onSwapLanguages: () -> Unit,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var isRotated by remember { mutableStateOf(false) }
@@ -60,6 +62,9 @@ fun AnimatedSwapLanguageButton(
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
         label = "rotationAnimation",
     )
+
+    val backgroundColor = if (isDarkTheme) Color(0xFF3D3D3D) else Purple40.copy(alpha = 0.2f)
+    val iconResId = if (isDarkTheme) R.drawable.sync_dark_24dp else R.drawable.sync_light_24dp
 
     IconButton(
         onClick = {
@@ -70,10 +75,10 @@ fun AnimatedSwapLanguageButton(
             modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Purple40.copy(alpha = 0.2f)),
+                .background(backgroundColor),
     ) {
         Image(
-            painter = painterResource(id = R.drawable.sync_24dp),
+            painter = painterResource(id = iconResId),
             contentDescription = "Swap languages",
             modifier =
                 Modifier
@@ -91,21 +96,33 @@ fun LanguageSelector(
     onSwapLanguages: () -> Unit,
     onSourceLanguageChange: () -> Unit,
     onTargetLanguageChange: () -> Unit,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val backgroundColor = if (isDarkTheme) Color(0xFF2C2C2C) else Purple80
+
     Row(
-        modifier = modifier.fillMaxWidth().background(Purple80).height(64.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .height(64.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         LanguageButton(
             languageItem = sourceLanguage,
             onClick = onSourceLanguageChange,
+            isDarkTheme = isDarkTheme,
         )
-        AnimatedSwapLanguageButton(onSwapLanguages = onSwapLanguages)
+        AnimatedSwapLanguageButton(
+            onSwapLanguages = onSwapLanguages,
+            isDarkTheme = isDarkTheme,
+        )
         LanguageButton(
             languageItem = targetLanguage,
             onClick = onTargetLanguageChange,
+            isDarkTheme = isDarkTheme,
         )
     }
 }
@@ -115,11 +132,15 @@ fun LanguageSelector(
 fun LanguageButton(
     languageItem: String,
     onClick: () -> Unit,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val backgroundColor = if (isDarkTheme) Color(0xFF3D3D3D) else Purple40.copy(alpha = 0.2f)
+    val contentColor = if (isDarkTheme) Color.White else Color.Black
+
     Button(
         onClick = onClick,
-        colors = ButtonDefaults.buttonColors(containerColor = Purple40.copy(alpha = 0.2f)),
+        colors = ButtonDefaults.buttonColors(containerColor = backgroundColor),
         modifier =
             modifier
                 .padding(horizontal = 8.dp)
@@ -140,7 +161,7 @@ fun LanguageButton(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = getLanguageName(languageItem),
-                color = Color.Black,
+                color = contentColor,
                 textAlign = TextAlign.Start,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -158,6 +179,9 @@ fun LanguageSelectionScreen(
     onLanguageSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color(0xFF121212) else Color.White
+
     val availableLanguages =
         remember(sourceLanguage, targetLanguage, languageType) {
             getSupportedLanguages().filter { (_, code) ->
@@ -173,7 +197,7 @@ fun LanguageSelectionScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(backgroundColor),
     ) {
         TopBar()
         LazyColumn(
@@ -186,24 +210,30 @@ fun LanguageSelectionScreen(
                 LanguageListItem(
                     languageCode = language.second,
                     onClick = { onLanguageSelect(language.second) },
+                    isDarkTheme = isDarkTheme,
                 )
             }
         }
     }
 }
 
-@Suppress("ktlint:standard:function-naming")
 @Composable
 fun LanguageListItem(
     languageCode: String,
     onClick: () -> Unit,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var isSelected by remember { mutableStateOf(false) }
     val backgroundColor by animateColorAsState(
-        if (isSelected) Color.LightGray else Color.Transparent,
+        if (isSelected) {
+            if (isDarkTheme) Color(0xFF3D3D3D) else Color.LightGray
+        } else {
+            if (isDarkTheme) Color(0xFF1E1E1E) else Color.Transparent
+        },
         label = "backgroundColorAnimation",
     )
+    val contentColor = if (isDarkTheme) Color.White else Color.Black
 
     Row(
         modifier =
@@ -226,6 +256,7 @@ fun LanguageListItem(
         Text(
             text = getLanguageName(languageCode),
             fontSize = 18.sp,
+            color = contentColor,
         )
     }
 }

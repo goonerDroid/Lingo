@@ -86,7 +86,8 @@ object AppModule {
     ): Retrofit =
         Retrofit
             .Builder()
-            .baseUrl("http://10.0.2.2:8000") // TODO Using local host for development
+            /*.baseUrl("http://10.0.2.2:8000")*/
+            .baseUrl("https://translator-q93h.onrender.com")
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()

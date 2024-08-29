@@ -33,7 +33,10 @@ import com.sublime.lingo.presentation.ui.theme.Pink80
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun TypingIndicatorItem(modifier: Modifier = Modifier) {
+fun TypingIndicatorItem(
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier =
             modifier
@@ -44,6 +47,7 @@ fun TypingIndicatorItem(modifier: Modifier = Modifier) {
             backgroundColor = Pink80.copy(alpha = 0.3f),
             contentColor = Color.Black,
             cornerRadius = 16.dp,
+            isDarkTheme,
         ) {
             TypingIndicator()
         }
