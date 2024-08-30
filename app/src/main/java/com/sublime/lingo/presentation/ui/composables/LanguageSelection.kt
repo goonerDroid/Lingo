@@ -204,7 +204,7 @@ fun LanguageSelectionScreen(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .weight(1f),
         ) {
             items(availableLanguages) { language ->
                 LanguageListItem(
@@ -217,6 +217,7 @@ fun LanguageSelectionScreen(
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun LanguageListItem(
     languageCode: String,

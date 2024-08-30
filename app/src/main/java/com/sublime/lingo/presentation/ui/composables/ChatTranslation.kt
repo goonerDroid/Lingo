@@ -294,6 +294,8 @@ fun InputArea(
                     unfocusedTextColor = contentColor,
                     focusedPlaceholderColor = contentColor.copy(alpha = 0.6f),
                     unfocusedPlaceholderColor = contentColor.copy(alpha = 0.6f),
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
                     cursorColor = contentColor,
                 ),
         )
