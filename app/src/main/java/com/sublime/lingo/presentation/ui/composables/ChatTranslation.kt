@@ -159,7 +159,14 @@ fun ChatList(
             ScrollToBottomButton(
                 onClick = {
                     coroutineScope.launch {
-                        listState.animateScrollToItem(0)
+                        val lastIndex = chatMessages.size - 1
+                        if (lastIndex > 40) {
+                            // For long conversations, scroll quickly
+                            listState.scrollToItem(0)
+                        } else {
+                            // For shorter conversations, use animation
+                            listState.animateScrollToItem(0)
+                        }
                     }
                 },
             )
