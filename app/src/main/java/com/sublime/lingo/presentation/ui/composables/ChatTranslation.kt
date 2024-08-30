@@ -285,7 +285,7 @@ fun InputArea(
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(24.dp)),
-            placeholder = { Text("Type a sentence to translate") },
+            placeholder = { Text("Type anything to translate") },
             singleLine = true,
             colors =
                 TextFieldDefaults.textFieldColors(

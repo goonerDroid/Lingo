@@ -21,10 +21,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,43 +56,71 @@ import com.sublime.lingo.presentation.ui.getLanguageName
 import com.sublime.lingo.presentation.ui.getSupportedLanguages
 import com.sublime.lingo.presentation.ui.theme.Purple40
 import com.sublime.lingo.presentation.ui.theme.Purple80
+import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun AnimatedSwapLanguageButton(
-    onSwapLanguages: () -> Unit,
-    isDarkTheme: Boolean,
+fun LanguageSelectionScreen(
+    languageType: String?,
+    sourceLanguage: String,
+    targetLanguage: String,
+    onLanguageSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var isRotated by remember { mutableStateOf(false) }
-    val rotationAngle by animateFloatAsState(
-        targetValue = if (isRotated) 180f else 0f,
-        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
-        label = "rotationAnimation",
-    )
+    val isDarkTheme = isSystemInDarkTheme()
+    val backgroundColor = if (isDarkTheme) Color(0xFF121212) else Color.White
+    val surfaceColor = if (isDarkTheme) Color(0xFF1E1E1E) else Color(0xFFF3E5F5)
+    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+    val availableLanguages =
+        remember(sourceLanguage, targetLanguage, languageType) {
+            getSupportedLanguages().filter { (_, code) ->
+                when (languageType) {
+                    "source" -> code != sourceLanguage && code != targetLanguage
+                    "target" -> code != sourceLanguage && code != targetLanguage
+                    else -> true
+                }
+            }
+        }
 
-    val backgroundColor = if (isDarkTheme) Color(0xFF3D3D3D) else Purple40.copy(alpha = 0.2f)
-    val iconResId = if (isDarkTheme) R.drawable.sync_dark_24dp else R.drawable.sync_light_24dp
+    val filteredLanguages =
+        remember(searchQuery, availableLanguages) {
+            if (searchQuery.text.isEmpty()) {
+                availableLanguages
+            } else {
+                availableLanguages.filter { (name, code) ->
+                    name.contains(searchQuery.text, ignoreCase = true) ||
+                        code.contains(searchQuery.text, ignoreCase = true)
+                }
+            }
+        }
 
-    IconButton(
-        onClick = {
-            isRotated = !isRotated
-            onSwapLanguages()
-        },
+    Column(
         modifier =
             modifier
-                .size(40.dp)
-                .clip(CircleShape)
+                .fillMaxSize()
                 .background(backgroundColor),
     ) {
-        Image(
-            painter = painterResource(id = iconResId),
-            contentDescription = "Swap languages",
+        TopBar()
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
+            isDarkTheme = isDarkTheme,
+        )
+        LazyColumn(
             modifier =
                 Modifier
-                    .size(24.dp)
-                    .rotate(rotationAngle),
-        )
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(surfaceColor),
+        ) {
+            items(filteredLanguages) { language ->
+                LanguageListItem(
+                    languageCode = language.second,
+                    onClick = { onLanguageSelect(language.second) },
+                    isDarkTheme = isDarkTheme,
+                )
+            }
+        }
     }
 }
 
@@ -171,50 +207,44 @@ fun LanguageButton(
 }
 
 @Suppress("ktlint:standard:function-naming")
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LanguageSelectionScreen(
-    languageType: String?,
-    sourceLanguage: String,
-    targetLanguage: String,
-    onLanguageSelect: (String) -> Unit,
+fun SearchBar(
+    query: TextFieldValue,
+    onQueryChange: (TextFieldValue) -> Unit,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val isDarkTheme = isSystemInDarkTheme()
-    val backgroundColor = if (isDarkTheme) Color(0xFF121212) else Color.White
+    val contentColor = if (isDarkTheme) Color.White else Color.Black
 
-    val availableLanguages =
-        remember(sourceLanguage, targetLanguage, languageType) {
-            getSupportedLanguages().filter { (_, code) ->
-                when (languageType) {
-                    "source" -> code != sourceLanguage && code != targetLanguage
-                    "target" -> code != sourceLanguage && code != targetLanguage
-                    else -> true
-                }
-            }
-        }
-
-    Column(
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
         modifier =
             modifier
-                .fillMaxSize()
-                .background(backgroundColor),
-    ) {
-        TopBar()
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-        ) {
-            items(availableLanguages) { language ->
-                LanguageListItem(
-                    languageCode = language.second,
-                    onClick = { onLanguageSelect(language.second) },
-                    isDarkTheme = isDarkTheme,
-                )
+                .fillMaxWidth(),
+        placeholder = { Text("Search languages to translate") },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.text.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange(TextFieldValue("")) }) {
+                    Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                }
             }
-        }
-    }
+        },
+        singleLine = true,
+        colors =
+            TextFieldDefaults.textFieldColors(
+                containerColor = if (isDarkTheme) Color(0xFF3C3C3C) else PurpleGrey80,
+                focusedTextColor = contentColor,
+                unfocusedTextColor = contentColor,
+                focusedPlaceholderColor = contentColor.copy(alpha = 0.6f),
+                unfocusedPlaceholderColor = contentColor.copy(alpha = 0.6f),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = contentColor,
+            ),
+    )
 }
 
 @Suppress("ktlint:standard:function-naming")
@@ -258,6 +288,45 @@ fun LanguageListItem(
             text = getLanguageName(languageCode),
             fontSize = 18.sp,
             color = contentColor,
+        )
+    }
+}
+
+@Suppress("ktlint:standard:function-naming")
+@Composable
+fun AnimatedSwapLanguageButton(
+    onSwapLanguages: () -> Unit,
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    var isRotated by remember { mutableStateOf(false) }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isRotated) 180f else 0f,
+        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        label = "rotationAnimation",
+    )
+
+    val backgroundColor = if (isDarkTheme) Color(0xFF3D3D3D) else Purple40.copy(alpha = 0.2f)
+    val iconResId = if (isDarkTheme) R.drawable.sync_dark_24dp else R.drawable.sync_light_24dp
+
+    IconButton(
+        onClick = {
+            isRotated = !isRotated
+            onSwapLanguages()
+        },
+        modifier =
+            modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(backgroundColor),
+    ) {
+        Image(
+            painter = painterResource(id = iconResId),
+            contentDescription = "Swap languages",
+            modifier =
+                Modifier
+                    .size(24.dp)
+                    .rotate(rotationAngle),
         )
     }
 }
