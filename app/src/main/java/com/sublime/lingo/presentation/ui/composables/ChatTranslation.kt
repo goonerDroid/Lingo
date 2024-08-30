@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -188,6 +189,7 @@ fun ChatBubble(
     isUser: Boolean,
     cornerRadius: Dp,
     isDarkTheme: Boolean,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val elevation = if (isDarkTheme) 4.dp else 1.dp
@@ -202,7 +204,7 @@ fun ChatBubble(
                 bottomStart = if (isUser) 16.dp else 4.dp,
                 bottomEnd = if (isUser) 4.dp else cornerRadius,
             ),
-        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+        modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp),
     ) {
         Box(modifier = Modifier.padding(12.dp)) {
             content()
@@ -236,9 +238,10 @@ fun ChatMessageItem(
         ChatBubble(
             backgroundColor = backgroundColor,
             contentColor = contentColor,
-            message.isUser,
+            isUser = message.isUser,
             cornerRadius = 12.dp,
             isDarkTheme = isDarkTheme,
+            modifier = Modifier.widthIn(max = if (message.isUser) 280.dp else 320.dp),
         ) {
             Column {
                 Text(

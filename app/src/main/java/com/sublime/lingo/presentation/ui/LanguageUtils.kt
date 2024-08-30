@@ -1,9 +1,6 @@
 package com.sublime.lingo.presentation.ui
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
-import androidx.compose.foundation.lazy.LazyListState
 import com.sublime.lingo.R
 import java.text.SimpleDateFormat
 import java.util.Date
