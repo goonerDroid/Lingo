@@ -185,6 +185,7 @@ fun ChatList(
 fun ChatBubble(
     backgroundColor: Color,
     contentColor: Color,
+    isUser: Boolean,
     cornerRadius: Dp,
     isDarkTheme: Boolean,
     content: @Composable () -> Unit,
@@ -198,8 +199,8 @@ fun ChatBubble(
             RoundedCornerShape(
                 topStart = cornerRadius,
                 topEnd = cornerRadius,
-                bottomStart = 4.dp,
-                bottomEnd = cornerRadius,
+                bottomStart = if (isUser) 16.dp else 4.dp,
+                bottomEnd = if (isUser) 4.dp else cornerRadius,
             ),
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
     ) {
@@ -235,7 +236,8 @@ fun ChatMessageItem(
         ChatBubble(
             backgroundColor = backgroundColor,
             contentColor = contentColor,
-            cornerRadius = 16.dp,
+            message.isUser,
+            cornerRadius = 12.dp,
             isDarkTheme = isDarkTheme,
         ) {
             Column {

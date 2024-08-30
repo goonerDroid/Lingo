@@ -46,7 +46,8 @@ fun TypingIndicatorItem(
         ChatBubble(
             backgroundColor = Pink80.copy(alpha = 0.3f),
             contentColor = Color.Black,
-            cornerRadius = 16.dp,
+            isUser = false,
+            cornerRadius = 12.dp,
             isDarkTheme,
         ) {
             TypingIndicator()
