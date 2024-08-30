@@ -6,6 +6,7 @@ import com.sublime.lingo.data.database.TranslationEntity
 import com.sublime.lingo.data.remote.api.ApiService
 import com.sublime.lingo.data.remote.model.TranslationRequest
 import com.sublime.lingo.domain.model.ChatMessage
+import com.sublime.lingo.presentation.viewmodel.ModelStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -16,6 +17,20 @@ class TranslationRepository
         private val apiService: ApiService,
         private val translationDao: TranslationDao,
     ) {
+        suspend fun getModelStatus(): ModelStatus =
+            withContext(Dispatchers.IO) {
+                try {
+                    val response = apiService.getModelStatus()
+                    when (response.status) {
+                        "ready" -> ModelStatus.READY
+                        "loading" -> ModelStatus.LOADING
+                        else -> ModelStatus.ERROR
+                    }
+                } catch (e: Exception) {
+                    ModelStatus.ERROR
+                }
+            }
+
         suspend fun translate(
             text: String,
             sourceLanguage: String,

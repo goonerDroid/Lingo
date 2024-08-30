@@ -56,6 +56,7 @@ import com.sublime.lingo.presentation.ui.theme.Pink80
 import com.sublime.lingo.presentation.ui.theme.Purple40
 import com.sublime.lingo.presentation.ui.theme.Purple80
 import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
+import com.sublime.lingo.presentation.viewmodel.ModelStatus
 import kotlinx.coroutines.launch
 
 @Suppress("ktlint:standard:function-naming")
@@ -66,6 +67,7 @@ fun ChatTranslationScreen(
     chatMessages: List<ChatMessage>,
     inputText: String,
     isTyping: Boolean,
+    modelStatus: ModelStatus,
     onInputTextChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onSwapLanguages: () -> Unit,
@@ -83,7 +85,7 @@ fun ChatTranslationScreen(
                 .fillMaxSize()
                 .background(backgroundColor),
     ) {
-        TopBar()
+        TopBar(status = modelStatus)
         LanguageSelector(
             sourceLanguage = sourceLanguage,
             targetLanguage = targetLanguage,

@@ -57,6 +57,7 @@ import com.sublime.lingo.presentation.ui.getSupportedLanguages
 import com.sublime.lingo.presentation.ui.theme.Purple40
 import com.sublime.lingo.presentation.ui.theme.Purple80
 import com.sublime.lingo.presentation.ui.theme.PurpleGrey80
+import com.sublime.lingo.presentation.viewmodel.ModelStatus
 
 @Suppress("ktlint:standard:function-naming")
 @Composable
@@ -64,6 +65,7 @@ fun LanguageSelectionScreen(
     languageType: String?,
     sourceLanguage: String,
     targetLanguage: String,
+    modelStatus: ModelStatus,
     onLanguageSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -100,7 +102,7 @@ fun LanguageSelectionScreen(
                 .fillMaxSize()
                 .background(backgroundColor),
     ) {
-        TopBar()
+        TopBar(status = modelStatus)
         SearchBar(
             query = searchQuery,
             onQueryChange = { searchQuery = it },

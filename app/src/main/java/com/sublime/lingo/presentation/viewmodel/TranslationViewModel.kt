@@ -8,6 +8,8 @@ import com.sublime.lingo.domain.model.ChatMessage
 import com.sublime.lingo.presentation.ui.DeviceIdManager
 import com.sublime.lingo.presentation.ui.TranslationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,9 +32,11 @@ class TranslationViewModel
         val targetLanguage = savedStateHandle.getStateFlow("targetLanguage", "hi")
 
         private val deviceId: String = deviceIdManager.getDeviceId()
+        private var statusFetchJob: Job? = null
 
         init {
             loadConversationHistory()
+            fetchModelStatus()
         }
 
         private fun loadConversationHistory() {
@@ -40,6 +44,37 @@ class TranslationViewModel
                 val history = repository.getConversationHistory(deviceId)
                 _uiState.update { it.copy(chatMessages = history) }
             }
+        }
+
+        private fun fetchModelStatus() {
+            // Cancel any existing job before starting a new one
+            statusFetchJob?.cancel()
+            statusFetchJob =
+                viewModelScope.launch {
+                    try {
+                        val status = repository.getModelStatus()
+                        _uiState.update { it.copy(modelStatus = status) }
+
+                        when (status) {
+                            ModelStatus.READY -> {
+                                // If status is READY, stop retrying
+                                statusFetchJob?.cancel()
+                            }
+
+                            ModelStatus.LOADING, ModelStatus.ERROR -> {
+                                // If status is LOADING or ERROR, retry after a delay
+                                delay(5000) // Wait for 5 seconds before retrying
+                                fetchModelStatus() // Recursive call to retry
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Handle error, set to ERROR status
+                        _uiState.update { it.copy(modelStatus = ModelStatus.ERROR) }
+                        // Retry after a delay
+                        delay(5000) // Wait for 5 seconds before retrying
+                        fetchModelStatus() // Recursive call to retry
+                    }
+                }
         }
 
         fun updateInputText(newText: String) {
@@ -121,6 +156,15 @@ class TranslationViewModel
             addMessageToChat(errorMessage)
         }
 
+        override fun onCleared() {
+            super.onCleared()
+            statusFetchJob?.cancel()
+        }
+
+        fun refreshModelStatus() {
+            fetchModelStatus()
+        }
+
         fun clearConversationHistory() {
             viewModelScope.launch {
                 repository.clearConversationHistory(deviceId)
@@ -128,3 +172,9 @@ class TranslationViewModel
             }
         }
     }
+
+enum class ModelStatus {
+    READY,
+    LOADING,
+    ERROR,
+}
