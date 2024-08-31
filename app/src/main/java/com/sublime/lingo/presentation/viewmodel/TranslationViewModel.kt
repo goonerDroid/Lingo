@@ -37,7 +37,6 @@ class TranslationViewModel
 
         init {
             loadConversationHistory()
-            fetchModelStatus()
         }
 
         private fun loadConversationHistory() {
@@ -47,7 +46,7 @@ class TranslationViewModel
             }
         }
 
-        private fun fetchModelStatus() {
+        fun fetchModelStatus() {
             statusFetchJob?.cancel()
             statusFetchJob =
                 viewModelScope.launch {

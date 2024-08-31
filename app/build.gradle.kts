@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.hilt.android)
+    implementation(libs.androidx.lifecycle.runtime.compose.android)
     kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.retrofit.core)
@@ -78,6 +79,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.3")
     implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
     implementation("com.jakewharton.timber:timber:5.0.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Room
     implementation("androidx.room:room-runtime:2.6.1")
