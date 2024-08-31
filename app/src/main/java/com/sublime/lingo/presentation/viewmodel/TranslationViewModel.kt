@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,32 +48,33 @@ class TranslationViewModel
         }
 
         private fun fetchModelStatus() {
-            // Cancel any existing job before starting a new one
             statusFetchJob?.cancel()
             statusFetchJob =
                 viewModelScope.launch {
-                    try {
-                        val status = repository.getModelStatus()
-                        _uiState.update { it.copy(modelStatus = status) }
+                    var retryDelay = 1000L // Start with a 1-second delay
+                    var attempt = 0
+                    while (isActive) {
+                        try {
+                            val status = repository.getModelStatus()
+                            _uiState.update { it.copy(modelStatus = status) }
 
-                        when (status) {
-                            ModelStatus.READY -> {
-                                // If status is READY, stop retrying
-                                statusFetchJob?.cancel()
+                            if (status == ModelStatus.READY) {
+                                break // Exit the loop if status is READY
                             }
-
-                            ModelStatus.LOADING, ModelStatus.ERROR -> {
-                                // If status is LOADING or ERROR, retry after a delay
-                                delay(5000) // Wait for 5 seconds before retrying
-                                fetchModelStatus() // Recursive call to retry
-                            }
+                        } catch (e: Exception) {
+                            _uiState.update { it.copy(modelStatus = ModelStatus.ERROR) }
                         }
-                    } catch (e: Exception) {
-                        // Handle error, set to ERROR status
-                        _uiState.update { it.copy(modelStatus = ModelStatus.ERROR) }
-                        // Retry after a delay
-                        delay(5000) // Wait for 5 seconds before retrying
-                        fetchModelStatus() // Recursive call to retry
+
+                        // Exponential backoff with a maximum delay of 1 minute
+                        retryDelay = (retryDelay * 1.5).toLong().coerceAtMost(60000)
+                        delay(retryDelay)
+                        attempt++
+
+                        // Reset retry delay after 5 attempts to prevent very long delays
+                        if (attempt >= 5) {
+                            retryDelay = 1000L
+                            attempt = 0
+                        }
                     }
                 }
         }
