@@ -68,8 +68,8 @@ fun TranslationApp(viewModel: TranslationViewModel = hiltViewModel()) {
                 modelStatus = uiState.modelStatus,
                 onLanguageSelect = { selectedLanguage ->
                     when (languageType) {
-                        "source" -> viewModel.setSourceLanguage(selectedLanguage)
-                        "target" -> viewModel.setTargetLanguage(selectedLanguage)
+                        "source" -> viewModel.setLanguage(true, selectedLanguage)
+                        "target" -> viewModel.setLanguage(false, selectedLanguage)
                     }
                     navController.popBackStack()
                 },

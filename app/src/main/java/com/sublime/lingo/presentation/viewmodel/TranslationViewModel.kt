@@ -76,7 +76,7 @@ class TranslationViewModel
             _uiState.update { it.copy(inputText = newText) }
         }
 
-        private fun setLanguage(
+        fun setLanguage(
             isSource: Boolean,
             language: String,
         ) {
