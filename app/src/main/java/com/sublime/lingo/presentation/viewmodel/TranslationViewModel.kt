@@ -8,13 +8,13 @@ import com.sublime.lingo.domain.model.ChatMessage
 import com.sublime.lingo.presentation.ui.DeviceIdManager
 import com.sublime.lingo.presentation.ui.TranslationUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -51,27 +51,20 @@ class TranslationViewModel
             statusFetchJob?.cancel()
             statusFetchJob =
                 viewModelScope.launch {
-                    var retryDelay = 1000L // Start with a 1-second delay
+                    var retryDelay = 1000L
                     var attempt = 0
-                    while (isActive) {
+                    while (true) {
                         try {
                             val status = repository.getModelStatus()
                             _uiState.update { it.copy(modelStatus = status) }
-
-                            if (status == ModelStatus.READY) {
-                                break // Exit the loop if status is READY
-                            }
+                            if (status == ModelStatus.READY) break
                         } catch (e: Exception) {
                             _uiState.update { it.copy(modelStatus = ModelStatus.ERROR) }
                         }
 
-                        // Exponential backoff with a maximum delay of 1 minute
                         retryDelay = (retryDelay * 1.5).toLong().coerceAtMost(60000)
                         delay(retryDelay)
-                        attempt++
-
-                        // Reset retry delay after 5 attempts to prevent very long delays
-                        if (attempt >= 5) {
+                        if (++attempt >= 5) {
                             retryDelay = 1000L
                             attempt = 0
                         }
@@ -83,52 +76,42 @@ class TranslationViewModel
             _uiState.update { it.copy(inputText = newText) }
         }
 
-        fun setSourceLanguage(language: String) {
-            savedStateHandle["sourceLanguage"] = language
-        }
-
-        fun setTargetLanguage(language: String) {
-            savedStateHandle["targetLanguage"] = language
+        private fun setLanguage(
+            isSource: Boolean,
+            language: String,
+        ) {
+            val key = if (isSource) "sourceLanguage" else "targetLanguage"
+            savedStateHandle[key] = language
         }
 
         fun swapLanguages() {
             val currentSource = sourceLanguage.value
-            val currentTarget = targetLanguage.value
-            setSourceLanguage(currentTarget)
-            setTargetLanguage(currentSource)
+            setLanguage(true, targetLanguage.value)
+            setLanguage(false, currentSource)
         }
 
         fun sendMessage() {
-            val textToTranslate = uiState.value.inputText
+            val textToTranslate = uiState.value.inputText.trim()
             if (textToTranslate.isBlank()) return
 
             viewModelScope.launch {
-                addMessageToChat(ChatMessage(textToTranslate, isUser = true))
-                clearInputAndStartTyping()
-
                 try {
-                    val result =
-                        repository.translate(
-                            textToTranslate,
-                            sourceLanguage.value,
-                            targetLanguage.value,
-                        )
-                    result.fold(
-                        onSuccess = { translatedText ->
-                            addMessageToChat(
-                                ChatMessage(
-                                    textToTranslate,
-                                    translatedText,
-                                    isUser = false,
-                                ),
-                            )
-                        },
-                        onFailure = {
-                            handleTranslationError()
-                        },
-                    )
+                    addMessageToChat(ChatMessage(textToTranslate, isUser = true))
+                    clearInputAndStartTyping()
+
+                    val translatedText =
+                        repository
+                            .translate(
+                                textToTranslate,
+                                sourceLanguage.value,
+                                targetLanguage.value,
+                            ).getOrThrow()
+
+                    addMessageToChat(ChatMessage(textToTranslate, translatedText, isUser = false))
                 } catch (e: Exception) {
-                    handleTranslationError()
+                    if (e !is CancellationException) {
+                        handleTranslationError()
+                    }
                 } finally {
                     stopTyping()
                 }
@@ -152,15 +135,10 @@ class TranslationViewModel
             val errorMessage =
                 ChatMessage(
                     text = "Error!",
-                    translatedText = "Sorry, there was an error processing your request. Please try again!",
+                    translatedText = "Sorry, there was an error processing your request. Please try again.",
                     isUser = false,
                 )
             addMessageToChat(errorMessage)
-        }
-
-        override fun onCleared() {
-            super.onCleared()
-            statusFetchJob?.cancel()
         }
 
         fun refreshModelStatus() {
@@ -172,6 +150,11 @@ class TranslationViewModel
                 repository.clearConversationHistory(deviceId)
                 _uiState.update { it.copy(chatMessages = emptyList()) }
             }
+        }
+
+        override fun onCleared() {
+            super.onCleared()
+            statusFetchJob?.cancel()
         }
     }
 
