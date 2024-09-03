@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sublime.lingo.R
+import com.sublime.lingo.presentation.ui.theme.Purple40
 import kotlinx.coroutines.delay
 
 @Suppress("ktlint:standard:function-naming")
@@ -93,7 +94,7 @@ fun LingoSplashScreen(
             Spacer(modifier = Modifier.height(32.dp))
             CircularProgressIndicator(
                 modifier = Modifier.size(50.dp),
-                color = Color.White,
+                color = Purple40,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(

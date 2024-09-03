@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background),
                 ) {
-                    androidx.compose.animation.AnimatedVisibility(
+                    AnimatedVisibility(
                         visible = showCustomSplashScreen && uiState.modelStatus == ModelStatus.LOADING,
                         enter = fadeIn(),
                         exit = fadeOut(),
@@ -56,7 +57,7 @@ class MainActivity : ComponentActivity() {
                         LingoSplashScreen(isLoading = true)
                     }
 
-                    androidx.compose.animation.AnimatedVisibility(
+                    AnimatedVisibility(
                         visible = !showCustomSplashScreen || uiState.modelStatus != ModelStatus.LOADING,
                         enter = fadeIn(),
                         exit = fadeOut(),
